@@ -69,7 +69,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
   // 1. Obtener Transacciones Manuales/Globales
   let txQuery = supabase
     .from('transactions')
-    .select('*')
+    .select('*, terminals(name)')
     .order('created_at', { ascending: false });
 
   if (user.role !== UserRole.SUPER_ADMIN) {
@@ -98,10 +98,11 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     id: t.id,
     date: new Date(t.created_at).toLocaleString('es-DO'),
     machineId: t.terminal_id,
-    machineName: t.machine_name || 'Terminal Desconocida',
+    machineName: t.machine_name || (t.terminals as any)?.name || 'Terminal Desconocida',
     type: t.type,
     amount: parseFloat(t.amount),
-    ticketId: t.ticket_id
+    ticketId: t.ticket_id,
+    _created_at: t.created_at // Campo interno para sorting
   }));
 
   const syncTickets = (ticketRes.data || []).map(t => ({
@@ -111,11 +112,16 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     machineName: (t.terminals as any)?.name || 'Terminal Sync',
     type: 'BET' as const,
     amount: parseFloat(t.amount),
-    ticketId: t.ticket_number
+    ticketId: t.ticket_number,
+    _created_at: t.created_at // Campo interno para sorting
   }));
 
-  // Unificar y ordenar por fecha (más recientes primero)
-  return [...txs, ...syncTickets].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 100) as Transaction[];
+  // Unificar y ordenar por fecha de creación (más recientes primero)
+  const combined = [...txs, ...syncTickets] as (Transaction & { _created_at: string })[];
+
+  return combined
+    .sort((a, b) => new Date(b._created_at).getTime() - new Date(a._created_at).getTime())
+    .slice(0, 100) as Transaction[];
 };
 
 /**
