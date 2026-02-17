@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2, Calendar } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2, Calendar, Dog } from 'lucide-react';
 
 const AuthScreen: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -78,32 +78,34 @@ const AuthScreen: React.FC = () => {
 
             <div className="max-w-4xl w-full grid md:grid-cols-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden relative z-10">
                 {/* Left Side: Illustration / Text */}
-                <div className="p-12 flex flex-col justify-center text-white hidden md:flex bg-gradient-to-br from-blue-900/20 to-transparent">
+                <div className="p-12 flex flex-col justify-center text-white hidden md:flex bg-gradient-to-br from-orange-900/20 to-transparent">
                     <div className="flex items-center space-x-2 mb-8">
-                        <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-xl italic">F</div>
-                        <span className="text-2xl font-bold tracking-tight">Fauget</span>
+                        <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-xl italic">
+                            <Dog size={24} className="text-white" />
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">MBRACES</span>
                     </div>
 
                     <h1 className="text-5xl font-bold mb-4 leading-tight">
-                        {isLogin ? 'Welcome Back!' : 'Create\nNew Account'}
+                        {isLogin ? '¿Listo para la Carrera?' : 'Crear\nNueva Cuenta'}
                     </h1>
                     <p className="text-slate-400 text-lg mb-8 leading-relaxed max-w-sm">
                         {isLogin
-                            ? 'Glad to see you again. Enter your credentials to access the MBRACES platform.'
-                            : 'Already Registered? Login to access your dashboard and manage your terminals.'}
+                            ? 'Bienvenido al panel administrativo de MBRACES. Ingrese sus credenciales para gestionar sus terminales.'
+                            : '¿Ya estás registrado? Inicia sesión para acceder a tu panel y gestionar tus máquinas.'}
                     </p>
 
                     <button
                         onClick={() => setIsLogin(!isLogin)}
                         className="text-orange-500 font-semibold flex items-center hover:text-orange-400 transition-colors"
                     >
-                        {isLogin ? 'Don\'t have an account? Sign Up' : 'Already have an account? Login'}
+                        {isLogin ? '¿No tienes una cuenta? Regístrate' : '¿Ya tienes una cuenta? Entrar'}
                     </button>
 
                     <div className="mt-auto pt-12">
                         <div className="w-12 h-1 bg-white/20 mb-6"></div>
                         <p className="text-xs text-slate-500 max-w-xs uppercase tracking-widest leading-loose">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean semper mauris in magna venenatis suscipit.
+                            Plataforma de gestión centralizada para terminales de carreras de galgos.
                         </p>
                     </div>
                 </div>
@@ -111,11 +113,11 @@ const AuthScreen: React.FC = () => {
                 {/* Right Side: Form */}
                 <div className="p-8 md:p-12 flex flex-col justify-center bg-white/5">
                     <div className="md:hidden text-center mb-8">
-                        <h1 className="text-3xl font-bold text-white">{isLogin ? 'Login' : 'Sign Up'}</h1>
+                        <h1 className="text-3xl font-bold text-white">{isLogin ? 'Entrar' : 'Registrarse'}</h1>
                     </div>
 
                     <div className="mb-8 hidden md:block">
-                        <h2 className="text-3xl font-bold text-white text-center">{isLogin ? 'Login' : 'Login'}</h2>
+                        <h2 className="text-3xl font-bold text-white text-center">{isLogin ? 'Iniciar Sesión' : 'Registro de Usuario'}</h2>
                     </div>
 
                     <form onSubmit={handleAuth} className="space-y-6">
@@ -127,7 +129,7 @@ const AuthScreen: React.FC = () => {
                                     exit={{ opacity: 0, y: -20 }}
                                     className="space-y-1"
                                 >
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Name</label>
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Nombre Completo</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <UserIcon size={18} className="text-slate-500" />
@@ -138,7 +140,7 @@ const AuthScreen: React.FC = () => {
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
                                             className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all placeholder:text-slate-600"
-                                            placeholder="Francois Mercer"
+                                            placeholder="Nombre del Administrador"
                                         />
                                     </div>
                                 </motion.div>
@@ -146,7 +148,7 @@ const AuthScreen: React.FC = () => {
                         </AnimatePresence>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Email</label>
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Correo Electrónico</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <Mail size={18} className="text-slate-500" />
@@ -157,13 +159,13 @@ const AuthScreen: React.FC = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all placeholder:text-slate-600"
-                                    placeholder="hello@reallygreatsite.com"
+                                    placeholder="correo@ejemplo.com"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Password</label>
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Contraseña</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <Lock size={18} className="text-slate-500" />
@@ -181,7 +183,7 @@ const AuthScreen: React.FC = () => {
 
                         {!isLogin && (
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Date of Birth</label>
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Fecha de Nacimiento</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <Calendar size={18} className="text-slate-500" />
@@ -220,18 +222,18 @@ const AuthScreen: React.FC = () => {
                             {loading ? (
                                 <Loader2 size={24} className="animate-spin" />
                             ) : (
-                                <span>{isLogin ? 'Log In' : 'Sign Up'}</span>
+                                <span>{isLogin ? 'Entrar al Sistema' : 'Crear Cuenta'}</span>
                             )}
                         </button>
                     </form>
 
                     <div className="mt-8 flex md:hidden items-center justify-center space-x-2">
-                        <span className="text-slate-400">{isLogin ? 'Don\'t have an account?' : 'Already Registered?'}</span>
+                        <span className="text-slate-400">{isLogin ? '¿No tienes cuenta?' : '¿Ya estás registrado?'}</span>
                         <button
                             onClick={() => setIsLogin(!isLogin)}
                             className="text-orange-500 font-bold"
                         >
-                            {isLogin ? 'Sign Up' : 'Login'}
+                            {isLogin ? 'Regístrate' : 'Entrar'}
                         </button>
                     </div>
                 </div>
