@@ -215,10 +215,10 @@ export const createTerminal = async (user: User, terminalData: Partial<Machine>)
       INICIO: 48,
       MINUTOS: 5,
       PORSENTAJE: 25,
-      jack: 2000.00,
-      jackweb: 1000.00,
-      maxjack: 20000.00,
-      maxjackweb: 1000.00,
+      JACK: 2000.00,
+      JACKWEB: 1000.00,
+      MAXJACK: 20000.00,
+      MAXJACKWEB: 1000.00,
       BONO: 100,
       RCD: 5,
       MUL_A: 0,
@@ -228,7 +228,7 @@ export const createTerminal = async (user: User, terminalData: Partial<Machine>)
       JACKPOT: 'FALSE',
       TABLA: 2,
       RCD_CARRERA: 4,
-      play: '37.webm',
+      PLAY: '37.webm',
       JACK_LOCAL: 300
     },
     PANTALLA: {

@@ -160,30 +160,37 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
               <h4 className="text-indigo-400 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
                 <Database size={14} className="mr-2" /> Motor de Juego [DOG]
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {currentIni?.DOG && Object.entries(currentIni.DOG)
-                  .filter(([key]) => key.toUpperCase().includes('JACK'))
-                  .map(([key, value]) => (
-                    <div key={key}>
-                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{key}</label>
-                      {typeof value === 'number' ? (
-                        <input
-                          type="number"
-                          step="any"
-                          value={value}
-                          onChange={e => handleIniChange('DOG', key, Number(e.target.value))}
-                          className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          value={value as string}
-                          onChange={e => handleIniChange('DOG', key, e.target.value)}
-                          className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
-                        />
-                      )}
-                    </div>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Campos específicos solicitados por el usuario */}
+                {[
+                  { key: 'JACK', label: 'JACKPOT ACTUAL', type: 'number' },
+                  { key: 'JACK_LOCAL', label: 'JACKPOT LOCAL', type: 'number' },
+                  { key: 'JACKPOT', label: 'HABILITAR JACKPOT', type: 'select', options: ['TRUE', 'FALSE'] },
+                  { key: 'JACKWEB', label: 'JACKPOT WEB', type: 'number' },
+                  { key: 'MAXJACK', label: 'MAXIMO JACKPOT', type: 'number' },
+                  { key: 'MAXJACKWEB', label: 'MAXIMO JACKPOT WEB', type: 'number' },
+                ].map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{field.label}</label>
+                    {field.type === 'select' ? (
+                      <select
+                        value={String(currentIni?.DOG?.[field.key as keyof IniConfig['DOG']] || 'FALSE')}
+                        onChange={e => handleIniChange('DOG', field.key, e.target.value)}
+                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                      >
+                        {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        step="any"
+                        value={currentIni?.DOG?.[field.key as keyof IniConfig['DOG']] || 0}
+                        onChange={e => handleIniChange('DOG', field.key, Number(e.target.value))}
+                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
