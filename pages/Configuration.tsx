@@ -194,7 +194,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                 <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">MENSAJE</label>
                 <input
                   type="text"
-                  value={currentIni.PANTALLA.MENSAJE}
+                  value={currentIni?.PANTALLA?.MENSAJE || ''}
                   onChange={e => handleIniChange('PANTALLA', 'MENSAJE', e.target.value)}
                   className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-4 py-3 outline-none focus:border-amber-500 focus:bg-slate-800"
                 />
