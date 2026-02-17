@@ -52,13 +52,23 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
 
   const handleIniChange = (section: 'DOG' | 'PANTALLA', key: string, value: any) => {
     if (!currentIni) return;
+
+    // Convertir la clave a mayúsculas para asegurar consistencia
+    const uppercaseKey = key.toUpperCase();
+
+    const newSection = { ...currentIni[section] } as any;
+
+    // Si existe la versión en minúsculas, la eliminamos para evitar duplicados
+    if (newSection[key.toLowerCase()] !== undefined && key.toLowerCase() !== uppercaseKey.toLowerCase()) {
+      delete newSection[key.toLowerCase()];
+    }
+
+    newSection[uppercaseKey] = value;
+
     setCurrentIni({
       ...currentIni,
-      [section]: {
-        ...currentIni[section as keyof IniConfig],
-        [key]: value
-      }
-    } as IniConfig);
+      [section]: newSection
+    });
   };
 
   const handleSyncIni = async () => {

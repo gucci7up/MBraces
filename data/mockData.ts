@@ -10,18 +10,21 @@ export const MOCK_USERS: User[] = [
     id: 'admin_01',
     name: 'Administrador General',
     role: UserRole.SUPER_ADMIN,
+    isApproved: true
   },
   {
     id: 'mod_01',
     name: 'Juan Pérez',
     role: UserRole.MODERATOR,
-    consortiumName: 'Consorcio La Suerte'
+    consortiumName: 'Consorcio La Suerte',
+    isApproved: true
   },
   {
     id: 'mod_02',
     name: 'Maria González',
     role: UserRole.MODERATOR,
-    consortiumName: 'Bancas El Cibao'
+    consortiumName: 'Bancas El Cibao',
+    isApproved: true
   }
 ];
 
@@ -47,37 +50,55 @@ export const MOCK_JACKPOT: JackpotConfig = {
 
 // Default Config (e.g. for Juan)
 export const MOCK_INI_CONFIG: IniConfig = {
-  dog: {
-    inicio: 299,
-    minutos: 5,
-    porsentaje: 25,
-    jack: 2512.12,
-    jackweb: 1000.00,
-    maxjack: 20000.00,
-    maxjackweb: 1000.00,
-    bono: 100,
-    rcd: 4
+  DOG: {
+    INICIO: 299,
+    MINUTOS: 5,
+    PORSENTAJE: 25,
+    JACK: 2512.12,
+    JACKWEB: 1000.00,
+    MAXJACK: 20000.00,
+    MAXJACKWEB: 1000.00,
+    BONO: 100,
+    RCD: 4,
+    MUL_A: 0,
+    NUMERO_MUL: 0,
+    BONUS_A: 0,
+    NUMERO_BONUS: 0,
+    JACKPOT: 'FALSE',
+    TABLA: 2,
+    RCD_CARRERA: 4,
+    PLAY: '37.webm',
+    JACK_LOCAL: 300
   },
-  pantalla: {
-    mensaje: "BIENVENIDOS A CONSORCIO LA SUERTE"
+  PANTALLA: {
+    MENSAJE: "BIENVENIDOS A CONSORCIO LA SUERTE"
   }
 };
 
 // Alt Config (e.g. for Maria - Different values to show change)
 export const MOCK_INI_CONFIG_ALT: IniConfig = {
-  dog: {
-    inicio: 150,
-    minutos: 3,
-    porsentaje: 30,
-    jack: 5000.00,
-    jackweb: 2500.00,
-    maxjack: 50000.00,
-    maxjackweb: 5000.00,
-    bono: 200,
-    rcd: 2
+  DOG: {
+    INICIO: 150,
+    MINUTOS: 3,
+    PORSENTAJE: 30,
+    JACK: 5000.00,
+    JACKWEB: 2500.00,
+    MAXJACK: 50000.00,
+    MAXJACKWEB: 5000.00,
+    BONO: 200,
+    RCD: 2,
+    MUL_A: 0,
+    NUMERO_MUL: 0,
+    BONUS_A: 0,
+    NUMERO_BONUS: 0,
+    JACKPOT: 'FALSE',
+    TABLA: 2,
+    RCD_CARRERA: 4,
+    PLAY: '37.webm',
+    JACK_LOCAL: 300
   },
-  pantalla: {
-    mensaje: "BANCAS EL CIBAO - PAGANDO AL INSTANTE"
+  PANTALLA: {
+    MENSAJE: "BANCAS EL CIBAO - PAGANDO AL INSTANTE"
   }
 };
 
@@ -167,7 +188,7 @@ const getMachinesForUser = (user: User) => {
 const getTransactionsForUser = (user: User) => {
   const userMachines = getMachinesForUser(user);
   const userMachineIds = userMachines.map(m => m.id);
-  
+
   if (user.role === UserRole.SUPER_ADMIN) return MOCK_TRANSACTIONS;
   return MOCK_TRANSACTIONS.filter(t => userMachineIds.includes(t.machineId));
 };
@@ -215,13 +236,13 @@ export const fetchJackpotConfig = async (): Promise<JackpotConfig> => {
 export const fetchIniConfig = async (userId?: string): Promise<IniConfig> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-        // Return different config based on simulated user selection
-        // In real app, this queries the DB for the specific user's INI string
-        if (userId === 'mod_02') {
-            resolve(MOCK_INI_CONFIG_ALT);
-        } else {
-            resolve(MOCK_INI_CONFIG);
-        }
+      // Return different config based on simulated user selection
+      // In real app, this queries the DB for the specific user's INI string
+      if (userId === 'mod_02') {
+        resolve(MOCK_INI_CONFIG_ALT);
+      } else {
+        resolve(MOCK_INI_CONFIG);
+      }
     }, 400);
   });
 };
