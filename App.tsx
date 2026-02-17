@@ -270,7 +270,7 @@ const App: React.FC = () => {
       case 'jackpot':
         return <Jackpot user={profile} />;
       case 'print':
-        return <PrintView appSettings={appSettings} />;
+        return <PrintView appSettings={appSettings} user={profile} />;
       case 'config':
         return (
           <Configuration

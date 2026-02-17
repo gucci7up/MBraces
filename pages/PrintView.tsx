@@ -1,21 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer } from 'lucide-react';
 import ThermalTicket from '../components/ThermalTicket';
-import { PrintData, AppSettings } from '../types';
+import { PrintData, AppSettings, User } from '../types';
+import { fetchFilteredTransactions } from '../data/supabaseService';
 
 interface PrintViewProps {
   appSettings: AppSettings;
+  user: User;
 }
 
-const PrintView: React.FC<PrintViewProps> = ({ appSettings }) => {
-  // Estado para simular datos dinámicos que vendrían de un reporte o selección
+const PrintView: React.FC<PrintViewProps> = ({ appSettings, user }) => {
   const [ticketData, setTicketData] = useState<PrintData>({
-    bancaName: 'BANCA LA SUERTE', // Este será reemplazado visualmente por el ticketName global si se prefiere
+    bancaName: appSettings.ticketName || 'MBRACES',
     date: new Date().toLocaleString('es-DO'),
-    totalBet: 5000,
-    totalPaid: 4200,
-    profit: 800
+    totalBet: 0,
+    totalPaid: 0,
+    profit: 0
   });
+  const [loading, setLoading] = useState(true);
+
+  // Cargar datos reales del día actual
+  useEffect(() => {
+    const loadTodayData = async () => {
+      setLoading(true);
+      const today = new Date().toLocaleDateString('en-CA');
+
+      try {
+        const transactions = await fetchFilteredTransactions(user, {
+          start: today,
+          end: today
+        });
+
+        const totalBet = transactions
+          .filter(t => t.type === 'BET')
+          .reduce((sum, t) => sum + t.amount, 0);
+
+        const totalPaid = transactions
+          .filter(t => t.type === 'PAYOUT')
+          .reduce((sum, t) => sum + t.amount, 0);
+
+        setTicketData({
+          bancaName: appSettings.ticketName || 'MBRACES',
+          date: new Date().toLocaleString('es-DO'),
+          totalBet,
+          totalPaid,
+          profit: totalBet - totalPaid
+        });
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTodayData();
+  }, [user, appSettings]);
 
   const handlePrint = () => {
     window.print();
