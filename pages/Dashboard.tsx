@@ -17,14 +17,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Use the correct function names from supabaseService.ts
-      const txs = await fetchFilteredTransactions(user);
-      const terminals = await getTerminals(user);
-      const races = await fetchRecentRaces(user);
+    // Solo mostrar el loading la primera vez para evitar parpadeos cada 10s
+    if (recentTransactions.length === 0) setLoading(true);
 
-      // La suma de ventas y pagos viene directamente del colector en tiempo real vía la tabla terminals
+    try {
+      const txs = await fetchFilteredTransactions(user, { limit: 5 });
+      const terminals = await getTerminals(user);
+      const races = await fetchRecentRaces(user, 5);
+
       const totalSales = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_sales) || 0), 0);
       const totalPayouts = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_payouts) || 0), 0);
       const onlineCount = terminals.filter(m => m.status === 'En Línea').length;
@@ -37,7 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         netIncome: totalSales - totalPayouts,
         lastSync: new Date().toLocaleString('es-DO')
       });
-      setRecentTransactions(txs.slice(0, 10));
+      setRecentTransactions(txs);
       setRecentRaces(races);
     } catch (err) {
       console.error(err);
@@ -49,16 +49,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   useEffect(() => {
     fetchData();
 
-    // Suscripción Realtime para estadísticas y nuevos tickets
-    const channel = supabase
-      .channel('dashboard-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'terminals' }, () => fetchData())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sync_tickets' }, () => fetchData())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sync_races' }, () => fetchData())
-      .subscribe();
+    // Actualización cada 10 segundos (según petición del usuario para evitar saturación)
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [user]);
 

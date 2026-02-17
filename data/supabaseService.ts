@@ -65,7 +65,7 @@ export const updateAppSettings = async (settings: AppSettings) => {
  * TRANSACCIONES (Finanzas)
  * Sincronizado con el esquema de reportes
  */
-export const fetchFilteredTransactions = async (user: User, filters?: { terminalId?: string, start?: string, end?: string }) => {
+export const fetchFilteredTransactions = async (user: User, filters?: { terminalId?: string, start?: string, end?: string, limit?: number }) => {
   // 1. Obtener Transacciones Manuales/Globales
   let txQuery = supabase
     .from('transactions')
@@ -121,7 +121,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
 
   return combined
     .sort((a, b) => new Date(b._created_at).getTime() - new Date(a._created_at).getTime())
-    .slice(0, 100) as Transaction[];
+    .slice(0, filters?.limit || 20) as Transaction[];
 };
 
 /**
