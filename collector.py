@@ -82,8 +82,11 @@ def sync_summary_and_heartbeat():
     # Endpoint: PATCH a terminals
     url = f"{SUPABASE_URL}/rest/v1/terminals?id=eq.{MACHINE_ID}&auth_token=eq.{MACHINE_TOKEN}"
     
+    # Usar UTC con sufijo Z para máxima compatibilidad con el navegador
+    now_iso = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    
     payload = {
-        "last_sync": datetime.now().isoformat(),
+        "last_sync": now_iso,
         "status": "En Línea",
         "last_race_number": stats['carrera_actual'],
         "last_ticket_number": stats['ticket_actual'],
@@ -91,10 +94,20 @@ def sync_summary_and_heartbeat():
         "daily_payouts": stats['pagos']
     }
 
+    headers = HEADERS.copy()
+    headers["Prefer"] = "return=representation" # Pedir que devuelva los datos para confirmar actualización
+
     try:
-        res = requests.patch(url, headers=HEADERS, json=payload, timeout=5)
-        if res.status_code in [200, 201, 204]:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK | Ventas: ${stats['ventas']}")
+        res = requests.patch(url, headers=headers, json=payload, timeout=5)
+        if res.status_code in [200, 201]:
+            data = res.json()
+            if not data:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ADVERTENCIA: Heartbeat enviado pero NO se encontró ninguna terminal con ese ID/Token en Supabase.")
+            else:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK | Ventas: ${stats['ventas']} | Online")
+        elif res.status_code == 204:
+             # Si el server no devuelve representación, al menos sabemos que el status fue OK
+             print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK (204) | Ventas: ${stats['ventas']}")
         else:
             print(f"Error Heartbeat: {res.status_code} - {res.text}")
     except Exception as e:
