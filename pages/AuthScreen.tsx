@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2, Calendar, Dog } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2, Calendar } from 'lucide-react';
+import { getAppSettings } from '../data/supabaseService';
+import { AppSettings } from '../types';
 
 const AuthScreen: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -12,6 +14,17 @@ const AuthScreen: React.FC = () => {
     const [dob, setDob] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+
+    React.useEffect(() => {
+        const fetchSettings = async () => {
+            const settings = await getAppSettings();
+            if (settings) {
+                setAppSettings(settings);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,8 +93,12 @@ const AuthScreen: React.FC = () => {
                 {/* Left Side: Illustration / Text */}
                 <div className="p-12 flex flex-col justify-center text-white hidden md:flex bg-gradient-to-br from-orange-900/20 to-transparent">
                     <div className="flex items-center space-x-2 mb-8">
-                        <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-xl italic">
-                            <Dog size={24} className="text-white" />
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-[#059669] shadow-xl shadow-emerald-900/40 border-2 border-slate-700/50">
+                            {appSettings?.appLogo ? (
+                                <img src={appSettings.appLogo} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="font-black text-white text-xl">G</span>
+                            )}
                         </div>
                         <span className="text-2xl font-bold tracking-tight">MBRACES</span>
                     </div>
