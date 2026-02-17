@@ -66,31 +66,35 @@ export const updateAppSettings = async (settings: AppSettings) => {
  * Sincronizado con el esquema de reportes
  */
 export const fetchFilteredTransactions = async (user: User, filters?: { terminalId?: string, start?: string, end?: string }) => {
-  let query = supabase
+  // 1. Obtener Transacciones Manuales/Globales
+  let txQuery = supabase
     .from('transactions')
     .select('*')
     .order('created_at', { ascending: false });
 
-  // Seguridad por Rol (Lógica de aplicación complementaria a RLS)
   if (user.role !== UserRole.SUPER_ADMIN) {
-    query = query.eq('terminal_owner_id', user.id);
+    txQuery = txQuery.eq('terminal_owner_id', user.id);
   }
+  if (filters?.terminalId && filters.terminalId !== 'ALL') txQuery = txQuery.eq('terminal_id', filters.terminalId);
+  if (filters?.start) txQuery = txQuery.gte('created_at', `${filters.start}T00:00:00`);
+  if (filters?.end) txQuery = txQuery.lte('created_at', `${filters.end}T23:59:59`);
 
-  if (filters?.terminalId && filters.terminalId !== 'ALL') {
-    query = query.eq('terminal_id', filters.terminalId);
-  }
+  // 2. Obtener Tickets del Collector (En tiempo real)
+  let ticketQuery = supabase
+    .from('sync_tickets')
+    .select('*, terminals(name)')
+    .order('created_at', { ascending: false });
 
-  if (filters?.start) query = query.gte('created_at', `${filters.start}T00:00:00`);
-  if (filters?.end) query = query.lte('created_at', `${filters.end}T23:59:59`);
+  if (filters?.terminalId && filters.terminalId !== 'ALL') ticketQuery = ticketQuery.eq('terminal_id', filters.terminalId);
+  if (filters?.start) ticketQuery = ticketQuery.gte('local_date', filters.start);
+  if (filters?.end) ticketQuery = ticketQuery.lte('local_date', filters.end);
 
-  const { data, error } = await query;
+  const [txRes, ticketRes] = await Promise.all([txQuery, ticketQuery]);
 
-  if (error) {
-    console.error("Error obteniendo transacciones:", error.message);
-    throw error;
-  }
+  if (txRes.error) console.error("Error tx:", txRes.error.message);
+  if (ticketRes.error) console.error("Error tickets:", ticketRes.error.message);
 
-  return data.map(t => ({
+  const txs = (txRes.data || []).map(t => ({
     id: t.id,
     date: new Date(t.created_at).toLocaleString('es-DO'),
     machineId: t.terminal_id,
@@ -98,7 +102,20 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     type: t.type,
     amount: parseFloat(t.amount),
     ticketId: t.ticket_id
-  })) as Transaction[];
+  }));
+
+  const syncTickets = (ticketRes.data || []).map(t => ({
+    id: t.id,
+    date: `${t.local_date} ${t.local_time || ''}`,
+    machineId: t.terminal_id,
+    machineName: (t.terminals as any)?.name || 'Terminal Sync',
+    type: 'BET' as const,
+    amount: parseFloat(t.amount),
+    ticketId: t.ticket_number
+  }));
+
+  // Unificar y ordenar por fecha (más recientes primero)
+  return [...txs, ...syncTickets].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 100) as Transaction[];
 };
 
 /**

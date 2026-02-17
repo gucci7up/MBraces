@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { RefreshCw, DollarSign, Server, TrendingUp, TrendingDown, ArrowUpRight, Wifi, Database } from 'lucide-react';
-// Corrected imports to match supabaseService.ts exports
+import { supabase } from '../lib/supabase';
 import { fetchFilteredTransactions, getTerminals } from '../data/supabaseService';
 import { DashboardStats, Transaction, User, UserRole } from '../types';
 
@@ -21,9 +21,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       // Use the correct function names from supabaseService.ts
       const txs = await fetchFilteredTransactions(user);
       const terminals = await getTerminals(user);
-      
-      const totalSales = txs.filter(t => t.type === 'BET').reduce((acc, curr) => acc + curr.amount, 0);
-      const totalPayouts = txs.filter(t => t.type === 'PAYOUT').reduce((acc, curr) => acc + curr.amount, 0);
+
+      // La suma de ventas y pagos viene directamente del colector en tiempo real vía la tabla terminals
+      const totalSales = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_sales) || 0), 0);
+      const totalPayouts = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_payouts) || 0), 0);
       const onlineCount = terminals.filter(m => m.status === 'En Línea').length;
 
       setStats({
@@ -44,6 +45,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   useEffect(() => {
     fetchData();
+
+    // Suscripción Realtime para estadísticas y nuevos tickets
+    const channel = supabase
+      .channel('dashboard-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'terminals' }, () => fetchData())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sync_tickets' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   if (loading || !stats) {
@@ -59,7 +71,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     { name: 'Ventas', value: stats.totalSales || 1 },
     { name: 'Pagos', value: stats.totalPayouts || 0 },
   ];
-  const COLORS = ['#10b981', '#ef4444']; 
+  const COLORS = ['#10b981', '#ef4444'];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -150,9 +162,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">{tx.ticketId}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
-                          tx.type === 'BET' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                        }`}>
+                        <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${tx.type === 'BET' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                          }`}>
                           {tx.type === 'BET' ? 'VENTA' : 'PAGO'}
                         </span>
                       </td>
