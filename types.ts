@@ -61,6 +61,7 @@ export interface Machine {
   status: string;
   last_sync: string;
   ip_address?: string;
+  auth_token?: string;
   software_version?: string;
   ini_content: IniConfig;
 }

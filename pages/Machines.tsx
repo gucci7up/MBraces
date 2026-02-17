@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Edit2, Power, Wifi, WifiOff, Shield, Database, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Power, Wifi, WifiOff, Shield, Database, Loader2, Key, Copy, Check } from 'lucide-react';
 // Fix: Removed createTerminal as it is not exported from supabaseService and not used in this component
 // Fix: Added createTerminal import
 import { getTerminals, createTerminal } from '../data/supabaseService';
@@ -17,6 +17,7 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const [newMachine, setNewMachine] = useState({
     name: '',
@@ -41,6 +42,13 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
   useEffect(() => {
     loadMachines();
   }, [user]);
+
+  const handleCopyToken = (token: string) => {
+    if (!token) return;
+    navigator.clipboard.writeText(token);
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,8 +120,7 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Terminal</th>
-                  <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Estado</th>
-                  <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Software</th>
+                  <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Auth Token</th>
                   <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right">Sync</th>
                 </tr>
               </thead>
@@ -132,16 +139,28 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${m.status === 'En Línea' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'
-                        }`}>
+                      {m.auth_token ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-mono text-[10px] flex items-center">
+                            <Key size={12} className="mr-2 text-indigo-500" />
+                            {m.auth_token.substring(0, 13)}...
+                          </div>
+                          <button
+                            onClick={() => handleCopyToken(m.auth_token)}
+                            className={`p-1.5 rounded-lg transition-all ${copiedToken === m.auth_token ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                          >
+                            {copiedToken === m.auth_token ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-300 italic">No generado</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="text-slate-400 text-xs">{m.last_sync ? new Date(m.last_sync).toLocaleTimeString() : 'Nunca'}</div>
+                      <div className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${m.status === 'En Línea' ? 'text-emerald-500' : 'text-slate-300'}`}>
                         {m.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                      {m.software_version || 'v1.0.0'}
-                    </td>
-                    <td className="px-6 py-4 text-right text-slate-400 text-xs">
-                      {m.last_sync ? new Date(m.last_sync).toLocaleTimeString() : 'Nunca'}
+                      </div>
                     </td>
                   </tr>
                 ))}
