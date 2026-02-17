@@ -124,10 +124,21 @@ def get_stats_from_db():
         cursor = conn.cursor()
         today = date.today().strftime('%Y-%m-%d')
         
-        # Ventas y Pagos
-        cursor.execute("SELECT COALESCE(SUM(CAST(VENTAS AS REAL)),0) as v, COALESCE(SUM(CAST(PAGOS AS REAL)),0) as p FROM VENTAS_P WHERE FECHA = ?", (today,))
-        row = cursor.fetchone()
-        ventas, pagos = (float(row['v']), float(row['p'])) if row else (0, 0)
+        # Ventas y Pagos (Sumar de todas las tablas de juegos: P, C, G, R)
+        tablas_ventas = ["VENTAS_P", "VENTAS_C", "VENTAS_G", "VENTAS_R"]
+        ventas_total = 0.0
+        pagos_total = 0.0
+        
+        for tabla in tablas_ventas:
+            try:
+                cursor.execute(f"SELECT SUM(CAST(VENTAS AS REAL)) as v, SUM(CAST(PAGOS AS REAL)) as p FROM {tabla} WHERE FECHA = ?", (today,))
+                row = cursor.fetchone()
+                if row:
+                    ventas_total += float(row['v'] or 0)
+                    pagos_total += float(row['p'] or 0)
+            except: pass
+        
+        ventas, pagos = ventas_total, pagos_total
         
         # Carrera actual
         cursor.execute("SELECT * FROM RACE_P ORDER BY ID DESC LIMIT 1")
