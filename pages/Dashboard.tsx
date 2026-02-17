@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { RefreshCw, DollarSign, Server, TrendingUp, TrendingDown, ArrowUpRight, Wifi, Database } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { fetchFilteredTransactions, getTerminals } from '../data/supabaseService';
+import { fetchFilteredTransactions, getTerminals, fetchRecentRaces } from '../data/supabaseService';
 import { DashboardStats, Transaction, User, UserRole } from '../types';
 
 interface DashboardProps {
@@ -13,6 +13,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [recentRaces, setRecentRaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -21,6 +22,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       // Use the correct function names from supabaseService.ts
       const txs = await fetchFilteredTransactions(user);
       const terminals = await getTerminals(user);
+      const races = await fetchRecentRaces(user);
 
       // La suma de ventas y pagos viene directamente del colector en tiempo real vía la tabla terminals
       const totalSales = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_sales) || 0), 0);
@@ -36,6 +38,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         lastSync: new Date().toLocaleString('es-DO')
       });
       setRecentTransactions(txs.slice(0, 10));
+      setRecentRaces(races);
     } catch (err) {
       console.error(err);
     } finally {
@@ -51,6 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       .channel('dashboard-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'terminals' }, () => fetchData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sync_tickets' }, () => fetchData())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sync_races' }, () => fetchData())
       .subscribe();
 
     return () => {
@@ -122,34 +126,64 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
-          <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest mb-6 w-full">Distribución Financiera</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={10} dataKey="value" cornerRadius={12}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* Lado Izquierdo: Gráfico y Carreras */}
+        <div className="space-y-6">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
+            <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest mb-6 w-full">Distribución Financiera</h3>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={10} dataKey="value" cornerRadius={12}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex gap-6 mt-4">
+              <div className="flex items-center text-[10px] font-bold text-slate-500"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-2"></span> VENTAS</div>
+              <div className="flex items-center text-[10px] font-bold text-slate-500"><span className="w-2.5 h-2.5 bg-red-500 rounded-full mr-2"></span> PAGOS</div>
+            </div>
           </div>
-          <div className="flex gap-6 mt-4">
-            <div className="flex items-center text-[11px] font-bold text-slate-500"><span className="w-3 h-3 bg-emerald-500 rounded-full mr-2"></span> VENTAS</div>
-            <div className="flex items-center text-[11px] font-bold text-slate-500"><span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span> PAGOS</div>
+
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-[0.2em] mb-4">Últimas Carreras</h3>
+            <div className="space-y-3">
+              {recentRaces.length === 0 ? (
+                <p className="text-center text-slate-400 text-[10px] italic py-4">Esperando resultados...</p>
+              ) : (
+                recentRaces.map(race => (
+                  <div key={race.id} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-900">Carrera #{race.raceNumber}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{race.terminalName}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {race.winners.split('-').map((n, i) => (
+                        <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white ${i === 0 ? 'bg-indigo-500' : i === 1 ? 'bg-indigo-400' : 'bg-indigo-300'
+                          }`}>
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        {/* Lado Derecho: Últimas Jugadas */}
+        <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
           <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
-            <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest">Últimas Jugadas (SQLite Sync)</h3>
+            <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest">Últimas Jugadas (Collector Sync)</h3>
             <span className="text-[10px] font-bold text-emerald-600 flex items-center bg-emerald-50 px-3 py-1 rounded-full">
               <Wifi size={12} className="mr-1.5 animate-pulse" /> LIVE SYNC
             </span>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto flex-1">
             <table className="w-full text-left">
               <tbody className="divide-y divide-slate-50">
                 {recentTransactions.length === 0 ? (

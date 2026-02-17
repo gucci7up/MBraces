@@ -125,6 +125,32 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
 };
 
 /**
+ * CARRERAS RECIENTES (Collector Sync)
+ */
+export const fetchRecentRaces = async (user: User, limit = 10) => {
+  const { data, error } = await supabase
+    .from('sync_races')
+    .select('*, terminals(name)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Error obteniendo carreras:", error.message);
+    return [];
+  }
+
+  return data.map(r => ({
+    id: r.id,
+    raceNumber: r.race_number,
+    winners: r.winner_numbers,
+    date: r.local_date,
+    time: r.local_time,
+    terminalName: (r.terminals as any)?.name || 'Terminal Sync',
+    createdAt: r.created_at
+  }));
+};
+
+/**
  * TERMINALES (Máquinas)
  */
 export const getTerminals = async (user: User) => {
