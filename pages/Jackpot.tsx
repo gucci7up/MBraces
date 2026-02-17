@@ -95,7 +95,7 @@ const Jackpot: React.FC<JackpotProps> = ({ user }) => {
             <h2 className="text-slate-500 font-black text-xs uppercase tracking-[0.3em]">Total Acumulado</h2>
 
             <div className="text-5xl md:text-8xl font-black tracking-tighter tabular-nums bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent drop-shadow-2xl">
-              RD${currentJackpot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              RD${totalJackpot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
 
             <div className="pt-8 flex flex-col items-center">
@@ -105,7 +105,7 @@ const Jackpot: React.FC<JackpotProps> = ({ user }) => {
                 ))}
               </div>
               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-xs leading-relaxed">
-                Este valor se actualiza automáticamente cada vez que una terminal procesa una apuesta en el SQLite local.
+                Valores sincronizados desde el archivo .INI de cada terminal activa.
               </p>
             </div>
           </div>
