@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Calendar, Download, FileSpreadsheet, Trash2, Filter, Search, Printer, FileText, Loader2, XCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, Download, FileSpreadsheet, Trash2, Filter, Search, Printer, FileText, Loader2, XCircle, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchFilteredTransactions, getTerminals, voidTransaction } from '../data/supabaseService';
 import { Transaction, User, Machine, AppSettings } from '../types';
 import jsPDF from 'jspdf';
@@ -58,6 +58,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const [dateEnd, setDateEnd] = useState(new Date().toLocaleDateString('en-CA'));
   const [selectedMachine, setSelectedMachine] = useState('ALL');
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction | 'calculatedNumbers', direction: 'asc' | 'desc' } | null>({ key: 'numbers', direction: 'asc' });
 
   const loadData = async () => {
     setLoading(true);
@@ -81,6 +82,25 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
 
   const activeTransactions = transactions.filter(t => t.status !== 'voided');
 
+  const sortedTransactions = useMemo(() => {
+    let sortableItems = [...transactions];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key as keyof Transaction] || '';
+        const bValue = b[sortConfig.key as keyof Transaction] || '';
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [transactions, sortConfig]);
+
   const totalBet = activeTransactions.filter(t => t.type === 'BET').reduce((sum, t) => sum + t.amount, 0);
   const totalPayout = activeTransactions.filter(t => t.type === 'PAYOUT').reduce((sum, t) => sum + t.amount, 0);
   const profit = totalBet - totalPayout;
@@ -101,6 +121,19 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
       console.error(err);
       alert("Error al anular el ticket.");
     }
+  };
+
+  const requestSort = (key: keyof Transaction) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: keyof Transaction) => {
+    if (!sortConfig || sortConfig.key !== key) return <div className="w-4 h-4 opacity-20"><ChevronUp size={14} /></div>;
+    return sortConfig.direction === 'asc' ? <ChevronUp size={14} className="text-emerald-500" /> : <ChevronDown size={14} className="text-emerald-500" />;
   };
 
   const handleThermalPrint = () => {
@@ -170,16 +203,48 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Ticket</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Terminal</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Tipo</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">NUMERO</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right">Monto</th>
+                <th
+                  className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:text-slate-600 transition-colors"
+                  onClick={() => requestSort('ticketId')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Ticket</span>
+                    {getSortIcon('ticketId')}
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:text-slate-600 transition-colors"
+                  onClick={() => requestSort('machineName')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Terminal</span>
+                    {getSortIcon('machineName')}
+                  </div>
+                </th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-center">Tipo</th>
+                <th
+                  className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:text-slate-600 transition-colors"
+                  onClick={() => requestSort('numbers')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>NUMERO</span>
+                    {getSortIcon('numbers')}
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right cursor-pointer hover:text-slate-600 transition-colors"
+                  onClick={() => requestSort('amount')}
+                >
+                  <div className="flex items-center justify-end space-x-1">
+                    <span>Monto</span>
+                    {getSortIcon('amount')}
+                  </div>
+                </th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-center">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {transactions.map(t => (
+              {sortedTransactions.map(t => (
                 <tr key={t.id} className={`hover:bg-slate-50/50 ${t.status === 'voided' ? 'opacity-40 grayscale' : ''}`}>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
