@@ -17,26 +17,29 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
+        @page {
+          size: letter;
+          margin: 0.5cm;
+        }
+        body {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
         .no-print {
           display: none !important;
         }
-        .print-area {
-          display: block !important;
-          visibility: visible !important;
-          height: auto !important;
-          overflow: visible !important;
-          position: relative !important;
-        }
-        @page {
-          size: letter;
-          margin: 1cm;
-        }
+        /* Asegurar que la tabla se vea bien */
         table {
-          page-break-inside: auto;
+          width: 100%;
+          border-collapse: collapse;
         }
-        tr {
-          page-break-inside: avoid;
-          page-break-after: auto;
+        th, td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          font-size: 10px;
+        }
+        th {
+          background-color: #f3f4f6 !important;
         }
       }
     `;
