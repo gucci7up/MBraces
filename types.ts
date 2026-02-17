@@ -75,6 +75,7 @@ export interface Transaction {
   amount: number;
   ticketId: string;
   numbers?: string;
+  playType?: string;
 }
 
 export interface DashboardStats {

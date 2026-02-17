@@ -51,7 +51,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     autoTable(doc, {
       startY: 40,
       head: [['Ticket', 'Fecha', 'Terminal', 'Tipo', 'NUMERO', 'Monto']],
-      body: transactions.map(t => [t.ticketId, t.date, t.machineName, t.type, t.numbers || '-', `RD$${t.amount.toLocaleString()}`]),
+      body: transactions.map(t => [t.ticketId, t.date, t.machineName, t.playType || t.type, t.numbers || '-', `RD$${t.amount.toLocaleString()}`]),
     });
     doc.save('reporte.pdf');
   };
@@ -121,7 +121,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
                   <td className="px-6 py-4 font-bold text-slate-700">{t.machineName}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${t.type === 'BET' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
-                      {t.type}
+                      {t.playType || t.type}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-xs font-black text-slate-600">

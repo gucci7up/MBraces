@@ -207,6 +207,7 @@ def sync_detailed_data():
                     "odds": float(t.get('VALOR') or 0),
                     "race_number": race_num,
                     "numbers": jugada,
+                    "play_type": str(t.get('TIPO') or ''), # Extraer TIPO (Quiniela, Ganador, etc.)
                     "local_date": t.get('FECHA') if t.get('FECHA') else None,
                     "local_time": format_to_iso_time(t.get('HORA')),
                     "raw_data": json.dumps(t, default=str)

@@ -193,10 +193,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">{tx.ticketId}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${tx.type === 'BET' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                          {tx.type === 'BET' ? 'VENTA' : 'PAGO'}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-[9px] w-fit font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${tx.type === 'BET' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                            {tx.type === 'BET' ? 'VENTA' : 'PAGO'}
+                          </span>
+                          {tx.playType && (
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                              {tx.playType}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-[11px] font-black text-slate-600">{tx.numbers || '-'}</p>
