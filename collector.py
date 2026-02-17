@@ -80,21 +80,21 @@ def get_stats_from_db():
         row = cursor.fetchone()
         carrera_actual = str(row['CARRERA'] if row and 'CARRERA' in row.keys() else "")
         
-        # Último ticket (Intentar TICKET, TIKET o ID)
+        # Último ticket (Intentar NUMERO_TIKET, TIKET, TICKET o ID)
         ticket_actual = ""
         try:
-            # Primero intentamos la tabla principal de tickets del día
+            # Primero intentamos la tabla TIKETS_P con NUMERO_TIKET (visto en GALDOS.db)
             cursor.execute("SELECT * FROM TIKETS_P ORDER BY ID DESC LIMIT 1")
             row = cursor.fetchone()
             if row:
-                ticket_actual = str(row['TICKET'] if 'TICKET' in row.keys() else row['TIKET'] if 'TIKET' in row.keys() else row['ID'])
+                ticket_actual = str(row['NUMERO_TIKET'] if 'NUMERO_TIKET' in row.keys() else row['TIKET'] if 'TIKET' in row.keys() else row['TICKET'] if 'TICKET' in row.keys() else row['ID'])
         except:
             try:
                 # Si falla, probamos con la tabla de vendidos
                 cursor.execute("SELECT * FROM TIKETS_VENDIDOS_P ORDER BY ID DESC LIMIT 1")
                 row = cursor.fetchone()
                 if row:
-                    ticket_actual = str(row['TICKET'] if 'TICKET' in row.keys() else row['TIKET'] if 'TIKET' in row.keys() else row['ID'])
+                    ticket_actual = str(row['TIKET'] if 'TIKET' in row.keys() else row['TICKET'] if 'TICKET' in row.keys() else row['ID'])
             except: pass
         
         conn.close()
@@ -123,15 +123,19 @@ def sync_detailed_data():
         if tickets:
             tickets_payload = []
             for t in tickets:
-                t_num = str(t.get('TICKET') or t.get('TIKET') or t.get('ID') or '')
+                # Usar TIKET o ID (visto en GALDOS.db)
+                t_num = str(t.get('TIKET') or t.get('TICKET') or t.get('ID') or '')
                 if not t_num: continue
+                
+                # Usar RACE o CARRERA (visto en GALDOS.db: TIKETS_VENDIDOS_P usa RACE)
+                race_num = str(t.get('RACE') or t.get('CARRERA') or '')
                 
                 tickets_payload.append({
                     "terminal_id": MACHINE_ID,
                     "ticket_number": t_num,
                     "amount": float(t.get('MONTO') or 0),
                     "odds": float(t.get('VALOR') or 0),
-                    "race_number": str(t.get('CARRERA') or ''),
+                    "race_number": race_num,
                     "numbers": str(t.get('NUMEROS') or ''),
                     "local_date": t.get('FECHA') if t.get('FECHA') else None,
                     "local_time": t.get('HORA') if t.get('HORA') else None,
