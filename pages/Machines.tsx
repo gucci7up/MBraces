@@ -6,6 +6,7 @@ import { Plus, Search, Edit2, Power, Wifi, WifiOff, Shield, Database, Loader2, K
 import { getTerminals, createTerminal } from '../data/supabaseService';
 import { Machine, MachineStatus, User, UserRole } from '../types';
 import { X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface MachinesProps {
   user: User;
@@ -41,6 +42,27 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
 
   useEffect(() => {
     loadMachines();
+
+    // SUSCRIPCIÓN REALTIME PARA ESTADO DE CADA MÁQUINA
+    const channel = supabase
+      .channel('machines-list-sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'terminals'
+      }, (payload) => {
+        // Actualizar la lista localmente sin recargar todo si es posible
+        if (payload.eventType === 'UPDATE') {
+          setMachines(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
+        } else {
+          loadMachines();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const handleCopyToken = (token: string) => {
@@ -129,7 +151,9 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
                   <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${m.status === 'En Línea' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > new Date(Date.now() - 60000)
+                            ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                          }`}>
                           <Database size={20} />
                         </div>
                         <div>
@@ -167,8 +191,10 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="text-slate-400 text-xs">{m.last_sync ? new Date(m.last_sync).toLocaleTimeString() : 'Nunca'}</div>
-                      <div className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${m.status === 'En Línea' ? 'text-emerald-500' : 'text-slate-300'}`}>
-                        {m.status}
+                      <div className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > new Date(Date.now() - 60000)
+                          ? 'text-emerald-500' : 'text-slate-300'
+                        }`}>
+                        {m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > new Date(Date.now() - 60000) ? 'En Línea' : 'Desconectado'}
                       </div>
                     </td>
                   </tr>

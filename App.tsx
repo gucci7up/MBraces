@@ -169,8 +169,19 @@ const App: React.FC = () => {
     if (!profile?.isApproved) return;
 
     const checkStatus = async () => {
-      const { data } = await supabase.from('terminals').select('status');
-      if (data && data.some(m => m.status === 'En Línea')) {
+      const { data } = await supabase
+        .from('terminals')
+        .select('status, last_sync');
+
+      const oneMinuteAgo = new Date(Date.now() - 60000);
+
+      const isAnyOnline = data && data.some(m => {
+        if (m.status !== 'En Línea') return false;
+        if (!m.last_sync) return false;
+        return new Date(m.last_sync) > oneMinuteAgo;
+      });
+
+      if (isAnyOnline) {
         setCollectorStatus('online');
       } else {
         setCollectorStatus('offline');
