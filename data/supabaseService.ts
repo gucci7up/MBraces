@@ -292,17 +292,59 @@ export const subscribeToJackpot = (onUpdate: (val: number) => void) => {
 
 /**
  * ANULACIÓN DE TICKETS
+ * Marca el ticket como anulado en Supabase Y lo registra en voided_tickets
+ * para que el collector lo sincronice con GALDOS.db (TICKETS_ELIMINADOS_P)
  */
 export const voidTransaction = async (id: string, isCollector: boolean) => {
   const table = isCollector ? 'sync_tickets' : 'transactions';
-  const { error } = await supabase
+
+  // 1. Obtener los datos completos de la transacción ANTES de anularla
+  const { data: transaction, error: fetchError } = await supabase
+    .from(table)
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !transaction) {
+    console.error(`Error obteniendo transacción de ${table}:`, fetchError?.message);
+    throw fetchError || new Error('Transacción no encontrada');
+  }
+
+  // 2. Marcar como anulado en la tabla original
+  const { error: updateError } = await supabase
     .from(table)
     .update({ status: 'voided' })
     .eq('id', id);
 
-  if (error) {
-    console.error(`Error anulando en ${table}:`, error.message);
-    throw error;
+  if (updateError) {
+    console.error(`Error anulando en ${table}:`, updateError.message);
+    throw updateError;
   }
+
+  // 3. Registrar en voided_tickets para que el collector lo sincronice con GALDOS.db
+  // Solo si es un ticket del collector (tiene terminal_id)
+  if (isCollector && transaction.terminal_id) {
+    const voidedTicket = {
+      terminal_id: transaction.terminal_id,
+      ticket_number: transaction.ticket_number || transaction.ticketId || '',
+      tipo: transaction.play_type || transaction.playType || '',
+      numeros: transaction.numbers || '',
+      valor: transaction.play_type || '',
+      monto: String(transaction.amount || 0),
+      race: transaction.race_number || transaction.raceNumber || '',
+      fecha: transaction.date ? transaction.date.split(' ')[0] : new Date().toISOString().split('T')[0],
+      hora: transaction.date ? transaction.date.split(' ')[1] || '' : new Date().toTimeString().split(' ')[0]
+    };
+
+    const { error: queueError } = await supabase
+      .from('voided_tickets')
+      .insert(voidedTicket);
+
+    if (queueError) {
+      console.warn('Error registrando anulación para sync:', queueError.message);
+      // No lanzamos error aquí porque la anulación en Supabase ya se completó
+    }
+  }
+
   return true;
 };

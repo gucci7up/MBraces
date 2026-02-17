@@ -345,10 +345,70 @@ def sync_config_ini():
     except Exception as e:
         print(f"Error Sync INI: {e}")
 
+def sync_voided_tickets():
+    """Sincroniza tickets anulados desde Supabase a GALDOS.db (TICKETS_ELIMINADOS_P)"""
+    if not os.path.exists(SQLITE_PATH):
+        return
+    
+    try:
+        # 1. Obtener tickets pendientes de sincronizar desde Supabase
+        url = f"{SUPABASE_URL}/rest/v1/voided_tickets?terminal_id=eq.{MACHINE_ID}&synced=eq.false&select=*"
+        res = requests.get(url, headers=HEADERS)
+        
+        if res.status_code != 200 or not res.json():
+            return  # No hay tickets pendientes o error
+        
+        voided_tickets = res.json()
+        if not voided_tickets:
+            return
+        
+        # 2. Insertar en GALDOS.db (TICKETS_ELIMINADOS_P)
+        conn = sqlite3.connect(SQLITE_PATH)
+        cursor = conn.cursor()
+        synced_ids = []
+        
+        for ticket in voided_tickets:
+            try:
+                cursor.execute("""
+                    INSERT INTO TICKETS_ELIMINADOS_P 
+                    (TICKET, TIPO, NUMEROS, VALOR, MONTO, RACE, FECHA, HORA)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    ticket.get('ticket_number', ''),
+                    ticket.get('tipo', ''),
+                    ticket.get('numeros', ''),
+                    ticket.get('valor', ''),
+                    ticket.get('monto', ''),
+                    ticket.get('race', ''),
+                    ticket.get('fecha', ''),
+                    ticket.get('hora', '')
+                ))
+                synced_ids.append(ticket['id'])
+            except Exception as e:
+                print(f"Error insertando ticket anulado {ticket.get('ticket_number')}: {e}")
+        
+        conn.commit()
+        conn.close()
+        
+        # 3. Marcar como sincronizados en Supabase
+        if synced_ids:
+            for ticket_id in synced_ids:
+                update_url = f"{SUPABASE_URL}/rest/v1/voided_tickets?id=eq.{ticket_id}"
+                requests.patch(update_url, headers=HEADERS, json={
+                    'synced': True,
+                    'synced_at': datetime.now().isoformat()
+                })
+            
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] {len(synced_ids)} ticket(s) anulado(s) sincronizado(s) a GALDOS.db")
+    
+    except Exception as e:
+        print(f"Error Sync Voided Tickets: {e}")
+
 # --- LOOP PRINCIPAL ---
 print("=== MBRACES COLLECTOR v3.0 INICIADO ===")
 last_data_sync = 0
 last_ini_sync = 0
+last_void_sync = 0
 
 while True:
     try:
@@ -361,6 +421,11 @@ while True:
         if now - last_ini_sync > 15:
             sync_config_ini()
             last_ini_sync = now
+        
+        # Cada 30 segundos: Sincronizar tickets anulados
+        if now - last_void_sync > 30:
+            sync_voided_tickets()
+            last_void_sync = now
             
         # Cada 60 segundos: Sincronizar datos detallados
         if now - last_data_sync > 60:
