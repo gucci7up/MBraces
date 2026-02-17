@@ -16,8 +16,8 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const [userMachines, setUserMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [dateStart, setDateStart] = useState(new Date().toISOString().split('T')[0]);
-  const [dateEnd, setDateEnd] = useState(new Date().toISOString().split('T')[0]);
+  const [dateStart, setDateStart] = useState(new Date().toLocaleDateString('en-CA'));
+  const [dateEnd, setDateEnd] = useState(new Date().toLocaleDateString('en-CA'));
   const [selectedMachine, setSelectedMachine] = useState('ALL');
 
   const loadData = async () => {

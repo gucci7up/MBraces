@@ -69,7 +69,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
   // 1. Obtener Transacciones Manuales/Globales
   let txQuery = supabase
     .from('transactions')
-    .select('*, terminals(name)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (user.role !== UserRole.SUPER_ADMIN) {
@@ -80,10 +80,15 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
   if (filters?.end) txQuery = txQuery.lte('created_at', `${filters.end}T23:59:59`);
 
   // 2. Obtener Tickets del Collector (En tiempo real)
+  // Filtramos mediante una subconsulta o inner join para asegurar que solo vea sus máquinas
   let ticketQuery = supabase
     .from('sync_tickets')
-    .select('*, terminals(name)')
+    .select('*, terminals!inner(name, owner_id)')
     .order('created_at', { ascending: false });
+
+  if (user.role !== UserRole.SUPER_ADMIN) {
+    ticketQuery = ticketQuery.eq('terminals.owner_id', user.id);
+  }
 
   if (filters?.terminalId && filters.terminalId !== 'ALL') ticketQuery = ticketQuery.eq('terminal_id', filters.terminalId);
   if (filters?.start) ticketQuery = ticketQuery.gte('local_date', filters.start);
@@ -98,22 +103,22 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     id: t.id,
     date: new Date(t.created_at).toLocaleString('es-DO'),
     machineId: t.terminal_id,
-    machineName: t.machine_name || (t.terminals as any)?.name || 'Terminal Desconocida',
+    machineName: t.machine_name || 'Terminal Desconocida',
     type: t.type,
     amount: parseFloat(t.amount),
     ticketId: t.ticket_id,
-    _created_at: t.created_at // Campo interno para sorting
+    _created_at: t.created_at
   }));
 
   const syncTickets = (ticketRes.data || []).map(t => ({
     id: t.id,
     date: `${t.local_date} ${t.local_time || ''}`,
     machineId: t.terminal_id,
-    machineName: (t.terminals as any)?.name || 'Terminal Sync',
+    machineName: (t.get_terminals || (t as any).terminals)?.name || 'Terminal Sync',
     type: 'BET' as const,
     amount: parseFloat(t.amount),
     ticketId: t.ticket_number,
-    _created_at: t.created_at // Campo interno para sorting
+    _created_at: t.created_at
   }));
 
   // Unificar y ordenar por fecha de creación (más recientes primero)
