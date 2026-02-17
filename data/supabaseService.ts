@@ -165,7 +165,7 @@ export const createTerminal = async (user: User, terminalData: Partial<Machine>)
       type: terminalData.type,
       status: 'Desconectado',
       ini_content: defaultIni,
-      last_sync: new Date().toISOString(),
+      last_sync: null,
       software_version: 'v1.0.0'
     }])
     .select()

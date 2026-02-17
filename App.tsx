@@ -24,6 +24,7 @@ const App: React.FC = () => {
     ticketName: 'CONSORCIO MBRACES',
     ticketLogo: null
   });
+  const [collectorStatus, setCollectorStatus] = useState<'online' | 'syncing' | 'offline' | 'error'>('offline');
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
@@ -163,6 +164,35 @@ const App: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.isApproved]);
 
+  // SUSCRIPCIÓN REALTIME A TERMINALES PARA STATUS GLOBAL
+  useEffect(() => {
+    if (!profile?.isApproved) return;
+
+    const checkStatus = async () => {
+      const { data } = await supabase.from('terminals').select('status');
+      if (data && data.some(m => m.status === 'En Línea')) {
+        setCollectorStatus('online');
+      } else {
+        setCollectorStatus('offline');
+      }
+    };
+
+    checkStatus();
+
+    const channel = supabase
+      .channel('terminal-status')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'terminals'
+      }, () => {
+        checkStatus();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.isApproved]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-white">
@@ -255,6 +285,7 @@ const App: React.FC = () => {
         notifications={notifications}
         onMarkAsRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
         onClearNotifications={() => setNotifications([])}
+        collectorStatus={collectorStatus}
       >
         {renderView()}
       </Layout>
