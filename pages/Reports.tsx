@@ -81,6 +81,59 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const totalPayout = transactions.filter(t => t.type === 'PAYOUT').reduce((sum, t) => sum + t.amount, 0);
   const profit = totalBet - totalPayout;
 
+  const handleThermalPrint = () => {
+    // Crear contenido para impresora térmica 80mm
+    let receipt = '\x1B\x40'; // Inicializar impresora
+    receipt += '\x1B\x61\x01'; // Centrar texto
+    receipt += '\x1B\x21\x30'; // Texto grande y negrita
+    receipt += `${appSettings?.ticketName || 'MBRACES'}\n`;
+    receipt += '\x1B\x21\x00'; // Texto normal
+    receipt += '================================\n';
+    receipt += 'REPORTE DE TRANSACCIONES\n';
+    receipt += '================================\n';
+    receipt += '\x1B\x61\x00'; // Alinear izquierda
+    receipt += `Periodo: ${dateStart} - ${dateEnd}\n`;
+    receipt += `Terminal: ${selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name || 'N/A'}\n`;
+    receipt += `Fecha Impresion: ${new Date().toLocaleString('es-DO')}\n`;
+    receipt += '--------------------------------\n';
+    receipt += '\x1B\x21\x08'; // Negrita
+    receipt += 'RESUMEN\n';
+    receipt += '\x1B\x21\x00'; // Normal
+    receipt += `Total Ventas:    RD$${totalBet.toLocaleString()}\n`;
+    receipt += `Total Pagos:     RD$${totalPayout.toLocaleString()}\n`;
+    receipt += '--------------------------------\n';
+    receipt += '\x1B\x21\x18'; // Doble altura y negrita
+    receipt += `GANANCIA: RD$${profit.toLocaleString()}\n`;
+    receipt += '\x1B\x21\x00'; // Normal
+    receipt += '================================\n';
+    receipt += 'DETALLE DE TRANSACCIONES\n';
+    receipt += '================================\n';
+
+    // Listar transacciones
+    transactions.forEach((t, index) => {
+      receipt += `#${index + 1} - ${t.ticketId}\n`;
+      receipt += `${t.date}\n`;
+      receipt += `Terminal: ${t.machineName}\n`;
+      receipt += `Tipo: ${t.type} | Num: ${t.numbers || '-'}\n`;
+      receipt += `Monto: RD$${t.amount.toLocaleString()}\n`;
+      receipt += '--------------------------------\n';
+    });
+
+    receipt += '\n\n\n';
+    receipt += '\x1D\x56\x00'; // Cortar papel
+
+    // Crear blob y descargar
+    const blob = new Blob([receipt], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reporte_${dateStart}_${dateEnd}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
@@ -104,8 +157,8 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
           <button onClick={handleExportPDF} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
             <FileText size={16} /> <span>PDF</span>
           </button>
-          <button onClick={() => window.print()} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
-            <Printer size={16} /> <span>Imprimir</span>
+          <button onClick={handleThermalPrint} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
+            <Printer size={16} /> <span>Imprimir 80mm</span>
           </button>
         </div>
       </div>
