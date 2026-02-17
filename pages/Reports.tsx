@@ -17,20 +17,11 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
-        body * {
-          visibility: hidden;
-        }
-        .print-area, .print-area * {
-          visibility: visible;
-        }
-        .print-area {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-        }
         .no-print {
           display: none !important;
+        }
+        .print-area {
+          display: block !important;
         }
         @page {
           size: letter;
@@ -177,7 +168,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
       </div>
 
       {/* PRINT-ONLY SECTION */}
-      <div className="print-area" style={{ display: 'none' }}>
+      <div className="print-area hidden md:block" style={{ visibility: 'hidden', height: 0, overflow: 'hidden' }}>
         <div style={{ padding: '20px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
             {appSettings?.ticketName || 'MBRACES'}
