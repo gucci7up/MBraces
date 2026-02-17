@@ -5,12 +5,13 @@ interface ThermalTicketProps {
   data: PrintData;
   logoUrl?: string | null;
   headerName?: string;
+  systemName?: string;
 }
 
-const ThermalTicket: React.FC<ThermalTicketProps> = ({ data, logoUrl, headerName }) => {
+const ThermalTicket: React.FC<ThermalTicketProps> = ({ data, logoUrl, headerName, systemName }) => {
   return (
-    <div 
-      id="thermal-ticket-area" 
+    <div
+      id="thermal-ticket-area"
       className="bg-white text-black font-mono text-sm p-4 w-[80mm] mx-auto border border-gray-200 shadow-sm print:shadow-none print:border-none print:p-0 print:mx-0"
     >
       <div className="text-center mb-4">
@@ -20,7 +21,7 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ data, logoUrl, headerName
           </div>
         )}
         <h2 className="text-xl font-bold uppercase">{headerName || data.bancaName}</h2>
-        <p className="text-xs mt-1">SISTEMA GALGOTRACK</p>
+        <p className="text-xs mt-1 uppercase">SISTEMA {systemName || 'GALGOTRACK'}</p>
       </div>
 
       <div className="border-b-2 border-dashed border-black my-2"></div>

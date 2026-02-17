@@ -28,7 +28,7 @@ const PrintView: React.FC<PrintViewProps> = ({ appSettings }) => {
           <h2 className="text-2xl font-bold text-slate-800">Impresión Térmica</h2>
           <p className="text-slate-500">Vista previa formato 80mm</p>
         </div>
-        <button 
+        <button
           onClick={handlePrint}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-600/20 transition-all transform hover:scale-105"
         >
@@ -41,42 +41,42 @@ const PrintView: React.FC<PrintViewProps> = ({ appSettings }) => {
         {/* Configuration Panel */}
         <div className="w-full lg:w-1/2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
           <h3 className="font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">Datos del Cierre</h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">Nombre Banca (Específica)</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={ticketData.bancaName}
-                onChange={e => setTicketData({...ticketData, bancaName: e.target.value})}
+                onChange={e => setTicketData({ ...ticketData, bancaName: e.target.value })}
                 className="w-full p-2 border border-slate-300 rounded-lg text-sm"
               />
               <p className="text-[10px] text-slate-400 mt-1">
                 El encabezado principal usará la configuración global del consorcio: <span className="font-bold">{appSettings.ticketName}</span>
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Total Apuestas</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={ticketData.totalBet}
                   onChange={e => {
                     const val = Number(e.target.value);
-                    setTicketData(prev => ({...prev, totalBet: val, profit: val - prev.totalPaid}));
+                    setTicketData(prev => ({ ...prev, totalBet: val, profit: val - prev.totalPaid }));
                   }}
                   className="w-full p-2 border border-slate-300 rounded-lg text-sm"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Total Pagos</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={ticketData.totalPaid}
                   onChange={e => {
-                     const val = Number(e.target.value);
-                     setTicketData(prev => ({...prev, totalPaid: val, profit: prev.totalBet - val}));
+                    const val = Number(e.target.value);
+                    setTicketData(prev => ({ ...prev, totalPaid: val, profit: prev.totalBet - val }));
                   }}
                   className="w-full p-2 border border-slate-300 rounded-lg text-sm"
                 />
@@ -91,7 +91,7 @@ const PrintView: React.FC<PrintViewProps> = ({ appSettings }) => {
                 </span>
               </div>
             </div>
-            
+
             <div className="text-xs text-slate-400 pt-4">
               <p>* Esta vista simula la generación de reportes ESC/POS.</p>
               <p>* Al hacer clic en imprimir, solo saldrá el ticket.</p>
@@ -101,11 +101,12 @@ const PrintView: React.FC<PrintViewProps> = ({ appSettings }) => {
 
         {/* Preview Area */}
         <div className="w-full lg:w-1/2 flex justify-center bg-slate-200/50 p-8 rounded-xl border border-dashed border-slate-300 min-h-[500px] items-center">
-            <ThermalTicket 
-              data={ticketData} 
-              logoUrl={appSettings.ticketLogo} 
-              headerName={appSettings.ticketName}
-            />
+          <ThermalTicket
+            data={ticketData}
+            logoUrl={appSettings.ticketLogo}
+            headerName={appSettings.ticketName}
+            systemName={appSettings.appName}
+          />
         </div>
       </div>
     </div>
