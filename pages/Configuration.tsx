@@ -161,27 +161,29 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                 <Database size={14} className="mr-2" /> Motor de Juego [DOG]
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {currentIni?.DOG && Object.entries(currentIni.DOG).map(([key, value]) => (
-                  <div key={key}>
-                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{key}</label>
-                    {typeof value === 'number' ? (
-                      <input
-                        type="number"
-                        step="any"
-                        value={value}
-                        onChange={e => handleIniChange('DOG', key, Number(e.target.value))}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={value as string}
-                        onChange={e => handleIniChange('DOG', key, e.target.value)}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
-                      />
-                    )}
-                  </div>
-                ))}
+                {currentIni?.DOG && Object.entries(currentIni.DOG)
+                  .filter(([key]) => key.toUpperCase().includes('JACK'))
+                  .map(([key, value]) => (
+                    <div key={key}>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{key}</label>
+                      {typeof value === 'number' ? (
+                        <input
+                          type="number"
+                          step="any"
+                          value={value}
+                          onChange={e => handleIniChange('DOG', key, Number(e.target.value))}
+                          className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={value as string}
+                          onChange={e => handleIniChange('DOG', key, e.target.value)}
+                          className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                        />
+                      )}
+                    </div>
+                  ))}
               </div>
             </div>
 
