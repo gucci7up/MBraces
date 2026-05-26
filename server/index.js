@@ -14,6 +14,15 @@ const port = Number(process.env.PORT || 5174);
 const jwtSecret = process.env.JWT_SECRET || 'change-me';
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 
+process.on('unhandledRejection', (reason) => {
+  process.stderr.write(`unhandledRejection: ${String(reason)}\n`);
+});
+
+process.on('uncaughtException', (err) => {
+  process.stderr.write(`uncaughtException: ${String(err?.stack || err)}\n`);
+  process.exit(1);
+});
+
 const pool = createPool({
   host: process.env.MYSQL_HOST || '127.0.0.1',
   port: Number(process.env.MYSQL_PORT || 3306),
@@ -55,6 +64,10 @@ function adminRequired(req, res, next) {
 }
 
 app.get('/api/health', async (_req, res) => {
+  res.json({ ok: true });
+});
+
+app.get('/api/health/db', async (_req, res) => {
   try {
     await pool.query('select 1 as ok');
     res.json({ ok: true });
@@ -594,5 +607,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(port, () => {
-  process.stdout.write(`API listening on http://localhost:${port}\n`);
+  process.stdout.write(`API listening on 0.0.0.0:${port}\n`);
 });
