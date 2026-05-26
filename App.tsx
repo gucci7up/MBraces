@@ -11,12 +11,11 @@ import AuthScreen from './pages/AuthScreen';
 import { DeleteTickets } from './pages/DeleteTickets';
 import { User, AppSettings, AppNotification, UserRole } from './types';
 import { Users, Loader2, ShieldAlert, LogOut } from 'lucide-react';
-import { supabase } from './lib/supabase';
-import { getAppSettings } from './data/supabaseService';
+import { getAppSettings, getTerminals } from './data/supabaseService';
+import { apiFetch, setToken as persistToken } from './lib/api';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [appSettings, setAppSettings] = useState<AppSettings>({
@@ -28,103 +27,53 @@ const App: React.FC = () => {
   const [collectorStatus, setCollectorStatus] = useState<'online' | 'syncing' | 'offline' | 'error'>('offline');
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('mbraces_token'));
 
-  // ESCUCHA DE SESIÓN SUPABASE
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    const refresh = () => {
+      const t = localStorage.getItem('mbraces_token');
+      setToken(t);
+    };
+    window.addEventListener('auth-changed', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('auth-changed', refresh);
+      window.removeEventListener('storage', refresh);
+    };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async () => {
     setLoading(true);
-    console.log("Iniciando fetchProfile para:", userId);
     try {
-      // 1. Intentar obtener el perfil
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.warn("Error inicial buscando perfil:", error.message);
-
-        // 2. Si hay error (no solo 406), intentamos crear/obtener de nuevo
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-          const newProfile = {
-            id: userId,
-            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
-            role: 'Moderador',
-            is_approved: false
-          };
-
-          console.log("Intentando crear perfil para el usuario logueado...");
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .upsert([newProfile], { onConflict: 'id' });
-
-          if (insertError) {
-            console.error("Error en upsert de perfil:", insertError.message);
-          }
-
-          // Intentamos leerlo una última vez después del upsert
-          const { data: finalData, error: finalError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-          if (finalData) {
-            data = finalData;
-          } else if (finalError) {
-            console.error("Error final leyendo perfil:", finalError.message);
-          }
-        }
-      }
-
+      const data = await apiFetch('/api/profile/me');
       if (data) {
         setProfile({
           id: data.id,
           name: data.name,
           role: data.role as UserRole,
-          consortiumName: data.consortium_name,
-          isApproved: data.is_approved
+          consortiumName: data.consortiumName,
+          isApproved: data.isApproved
         });
       } else {
-        console.error("No se pudo obtener ni crear el perfil para el usuario. Aplicando bypass local...");
-        // BYPASS: Si llegamos aquí y hay sesión, creamos un perfil local temporal para no bloquear la pantalla
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setProfile({
-            id: user.id,
-            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
-            role: UserRole.MODERATOR, // Por defecto moderador hasta que se sincronice
-            isApproved: false
-          });
-        }
+        setProfile(null);
       }
     } catch (err) {
-      console.error("Error crítico en fetchProfile:", err);
+      persistToken(null);
+      setToken(null);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!token) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+    void fetchProfile();
+  }, [token]);
 
   // CARGA INICIAL DE SETTINGS
   useEffect(() => {
@@ -133,46 +82,16 @@ const App: React.FC = () => {
         const settings = await getAppSettings();
         if (settings) setAppSettings(settings);
       } catch (err) {
-        console.error("Error cargando settings de Supabase:", err);
       }
     };
     initSettings();
   }, []);
 
-  // SUSCRIPCIÓN REALTIME A ALERTAS
-  useEffect(() => {
-    if (!profile?.isApproved) return;
-
-    const channel = supabase
-      .channel('system-alerts')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications'
-      }, (payload) => {
-        const newNotif: AppNotification = {
-          id: payload.new.id,
-          title: payload.new.title,
-          message: payload.new.message,
-          type: payload.new.type as any,
-          timestamp: new Date().toLocaleTimeString(),
-          read: false
-        };
-        setNotifications(prev => [newNotif, ...prev].slice(0, 10));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [profile?.isApproved]);
-
-  // SUSCRIPCIÓN REALTIME A TERMINALES PARA STATUS GLOBAL
   useEffect(() => {
     if (!profile?.isApproved) return;
 
     const checkStatus = async () => {
-      const { data } = await supabase
-        .from('terminals')
-        .select('status, last_sync');
+      const data = await getTerminals(profile);
 
       const oneMinuteAgo = new Date(Date.now() - 60000);
 
@@ -191,18 +110,8 @@ const App: React.FC = () => {
 
     checkStatus();
 
-    const channel = supabase
-      .channel('terminal-status')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'terminals'
-      }, () => {
-        checkStatus();
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(checkStatus, 10000);
+    return () => { clearInterval(interval); };
   }, [profile?.isApproved]);
 
   if (loading) {
@@ -214,7 +123,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (!session) {
+  if (!token) {
     return <AuthScreen />;
   }
 
@@ -229,7 +138,10 @@ const App: React.FC = () => {
           Tu cuenta ha sido creada exitosamente, pero requiere la aprobación de un administrador para acceder al sistema.
         </p>
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => {
+            persistToken(null);
+            window.dispatchEvent(new Event('auth-changed'));
+          }}
           className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all flex items-center gap-2"
         >
           <LogOut size={18} /> Salir
@@ -249,7 +161,10 @@ const App: React.FC = () => {
           Si esta pantalla persiste, es posible que tu perfil no se haya creado correctamente.
         </p>
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => {
+            persistToken(null);
+            window.dispatchEvent(new Event('auth-changed'));
+          }}
           className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all"
         >
           Cerrar Sesión

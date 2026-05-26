@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { User, UserRole } from '../types';
 import { Check, X, Shield, User as UserIcon, Mail, Calendar, Loader2 } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 const UserApproval: React.FC = () => {
     const [pendingUsers, setPendingUsers] = useState<User[]>([]);
@@ -11,22 +11,14 @@ const UserApproval: React.FC = () => {
     const fetchPendingUsers = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('is_approved', false);
-
-            if (error) throw error;
-
-            if (data) {
-                setPendingUsers(data.map(d => ({
-                    id: d.id,
-                    name: d.name,
-                    role: d.role as UserRole,
-                    consortiumName: d.consortium_name,
-                    isApproved: d.is_approved
-                })));
-            }
+            const data = await apiFetch('/api/admin/pending-users');
+            setPendingUsers((data || []).map((d: any) => ({
+                id: d.id,
+                name: d.name,
+                role: d.role as UserRole,
+                consortiumName: d.consortiumName,
+                isApproved: d.isApproved
+            })));
         } catch (error) {
             console.error('Error fetching users:', error);
         } finally {
@@ -41,12 +33,7 @@ const UserApproval: React.FC = () => {
     const handleApprove = async (userId: string) => {
         setProcessingId(userId);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ is_approved: true })
-                .eq('id', userId);
-
-            if (error) throw error;
+            await apiFetch(`/api/admin/approve/${encodeURIComponent(userId)}`, { method: 'POST' });
 
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
         } catch (error) {
@@ -61,14 +48,7 @@ const UserApproval: React.FC = () => {
 
         setProcessingId(userId);
         try {
-            // Nota: Eliminar el perfil es fácil, pero eliminar la auth.user requiere service_role o admin functions.
-            // Por ahora solo eliminamos el perfil para que no aparezca en la lista.
-            const { error } = await supabase
-                .from('profiles')
-                .delete()
-                .eq('id', userId);
-
-            if (error) throw error;
+            await apiFetch(`/api/admin/reject/${encodeURIComponent(userId)}`, { method: 'POST' });
 
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
         } catch (error) {

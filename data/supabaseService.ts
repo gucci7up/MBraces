@@ -1,63 +1,35 @@
-
-import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 import { Transaction, Machine, IniConfig, User, AppSettings, UserRole } from '../types';
 
 /**
  * SERVICIOS DE PERFIL
  */
 export const getProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    console.error("Error obteniendo perfil:", error.message);
+  try {
+    const profile = await apiFetch('/api/profile/me');
+    if (profile?.id !== userId) return null;
+    return profile;
+  } catch {
     return null;
   }
-  return data;
 };
 
 /**
  * CONFIGURACIÓN GLOBAL (Identidad)
  */
 export const getAppSettings = async () => {
-  const { data, error } = await supabase
-    .from('app_settings')
-    .select('*')
-    .eq('id', 1)
-    .single();
-
-  if (error) {
-    console.error("Error obteniendo ajustes:", error.message);
+  try {
+    return await apiFetch('/api/app-settings') as AppSettings;
+  } catch {
     return null;
   }
-
-  return {
-    appName: data.app_name,
-    appLogo: data.app_logo_url,
-    ticketName: data.ticket_name,
-    ticketLogo: data.ticket_logo_url
-  } as AppSettings;
 };
 
 export const updateAppSettings = async (settings: AppSettings) => {
-  const { error } = await supabase
-    .from('app_settings')
-    .update({
-      app_name: settings.appName,
-      app_logo_url: settings.appLogo,
-      ticket_name: settings.ticketName,
-      ticket_logo_url: settings.ticketLogo,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', 1);
-
-  if (error) {
-    console.error("Error actualizando ajustes:", error.message);
-    throw error;
-  }
+  await apiFetch('/api/app-settings', {
+    method: 'PUT',
+    body: JSON.stringify(settings)
+  });
   return true;
 };
 
@@ -66,146 +38,35 @@ export const updateAppSettings = async (settings: AppSettings) => {
  * Sincronizado con el esquema de reportes
  */
 export const fetchFilteredTransactions = async (user: User, filters?: { terminalId?: string, start?: string, end?: string, limit?: number }) => {
-  // 1. Obtener Transacciones Manuales/Globales
-  let txQuery = supabase
-    .from('transactions')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (user.role !== UserRole.SUPER_ADMIN) {
-    txQuery = txQuery.eq('terminal_owner_id', user.id);
-  }
-  if (filters?.terminalId && filters.terminalId !== 'ALL') txQuery = txQuery.eq('terminal_id', filters.terminalId);
-  if (filters?.start) txQuery = txQuery.gte('created_at', `${filters.start}T00:00:00`);
-  if (filters?.end) txQuery = txQuery.lte('created_at', `${filters.end}T23:59:59`);
-
-  // 2. Obtener Tickets del Collector (En tiempo real)
-  // Filtramos mediante una subconsulta o inner join para asegurar que solo vea sus máquinas
-  let ticketQuery = supabase
-    .from('sync_tickets')
-    .select('*, terminals!inner(name, owner_id)')
-    .order('created_at', { ascending: false });
-
-  if (user.role !== UserRole.SUPER_ADMIN) {
-    ticketQuery = ticketQuery.eq('terminals.owner_id', user.id);
-  }
-
-  if (filters?.terminalId && filters.terminalId !== 'ALL') ticketQuery = ticketQuery.eq('terminal_id', filters.terminalId);
-  if (filters?.start) ticketQuery = ticketQuery.gte('local_date', filters.start);
-  if (filters?.end) ticketQuery = ticketQuery.lte('local_date', filters.end);
-
-  const [txRes, ticketRes] = await Promise.all([txQuery, ticketQuery]);
-
-  if (txRes.error) console.error("Error tx:", txRes.error.message);
-  if (ticketRes.error) console.error("Error tickets:", ticketRes.error.message);
-
-  const txs = (txRes.data || []).map(t => ({
-    id: t.id,
-    date: new Date(t.created_at).toLocaleString('es-DO'),
-    machineId: t.terminal_id,
-    machineName: t.machine_name || 'Terminal Desconocida',
-    type: t.type,
-    amount: parseFloat(t.amount),
-    ticketId: t.ticket_id,
-    numbers: (t as any).numbers || '',
-    playType: (t as any).play_type || '',
-    status: t.status || 'active',
-    isCollector: false,
-    _created_at: t.created_at
-  }));
-
-  const syncTickets = (ticketRes.data || []).map(t => {
-    // Extraer el tipo de ticket del raw_data
-    let ticketType: 'BET' | 'PAYOUT' = 'BET';
-    try {
-      const rawData = typeof t.raw_data === 'string' ? JSON.parse(t.raw_data) : t.raw_data;
-      ticketType = rawData?._ticket_type === 'PAYOUT' ? 'PAYOUT' : 'BET';
-    } catch (e) {
-      // Si falla el parsing, asumimos BET por defecto
-    }
-
-    return {
-      id: t.id,
-      date: `${t.local_date} ${t.local_time || ''}`,
-      machineId: t.terminal_id,
-      machineName: (t.get_terminals || (t as any).terminals)?.name || 'Terminal Sync',
-      type: ticketType,
-      amount: parseFloat(t.amount),
-      ticketId: t.ticket_number,
-      numbers: t.numbers,
-      playType: t.play_type,
-      status: t.status || 'active',
-      isCollector: true,
-      _created_at: t.created_at
-    };
-  });
-
-  // Unificar y ordenar por fecha de creación (más recientes primero)
-  const combined = [...txs, ...syncTickets] as (Transaction & { _created_at: string })[];
-
-  return combined
-    .sort((a, b) => new Date(b._created_at).getTime() - new Date(a._created_at).getTime())
-    .slice(0, filters?.limit || 20) as Transaction[];
+  const params = new URLSearchParams();
+  if (filters?.terminalId) params.set('terminalId', filters.terminalId);
+  if (filters?.start) params.set('start', filters.start);
+  if (filters?.end) params.set('end', filters.end);
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return await apiFetch(`/api/transactions${qs}`) as Transaction[];
 };
 
 /**
  * CARRERAS RECIENTES (Collector Sync)
  */
 export const fetchRecentRaces = async (user: User, limit = 10) => {
-  const { data, error } = await supabase
-    .from('sync_races')
-    .select('*, terminals(name)')
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error("Error obteniendo carreras:", error.message);
-    return [];
-  }
-
-  return data.map(r => ({
-    id: r.id,
-    raceNumber: r.race_number,
-    winners: r.winner_numbers,
-    date: r.local_date,
-    time: r.local_time,
-    terminalName: (r.terminals as any)?.name || 'Terminal Sync',
-    createdAt: r.created_at
-  }));
+  const qs = `?limit=${encodeURIComponent(String(limit))}`;
+  return await apiFetch(`/api/races/recent${qs}`) as any[];
 };
 
 /**
  * TERMINALES (Máquinas)
  */
 export const getTerminals = async (user: User) => {
-  let query = supabase.from('terminals').select('*');
-
-  if (user.role !== UserRole.SUPER_ADMIN) {
-    query = query.eq('owner_id', user.id);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error obteniendo terminales:", error.message);
-    throw error;
-  }
-  return data;
+  return await apiFetch('/api/terminals') as any[];
 };
 
 export const updateIniConfig = async (terminalId: string, config: IniConfig) => {
-  const { error } = await supabase
-    .from('terminals')
-    .update({
-      ini_content: config,
-      last_sync: new Date().toISOString()
-    })
-    .eq('id', terminalId);
-
-  if (error) {
-    console.error("Error actualizando INI:", error.message);
-    throw error;
-  }
+  await apiFetch(`/api/terminals/${encodeURIComponent(terminalId)}/ini`, {
+    method: 'PUT',
+    body: JSON.stringify(config)
+  });
   return true;
 };
 
@@ -236,58 +97,39 @@ export const createTerminal = async (user: User, terminalData: Partial<Machine>)
     }
   };
 
-  const { data, error } = await supabase
-    .from('terminals')
-    .insert([{
-      owner_id: user.id,
-      name: terminalData.name,
-      address: terminalData.address,
-      phone: terminalData.phone,
-      manager: terminalData.manager,
-      type: terminalData.type,
-      status: 'Desconectado',
-      ini_content: defaultIni,
-      last_sync: null,
-      software_version: 'v1.0.0'
-    }])
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error creando terminal:", error.message);
-    throw error;
-  }
-  return data;
+  return await apiFetch('/api/terminals', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...terminalData,
+      ini_content: defaultIni
+    })
+  });
 };
 
 /**
  * JACKPOT (Realtime)
  */
 export const getJackpotValue = async () => {
-  const { data, error } = await supabase
-    .from('jackpot_values')
-    .select('current_value')
-    .eq('id', 1)
-    .single();
-
-  if (error) {
-    console.error("Error obteniendo jackpot:", error.message);
-    return 0;
-  }
-  return parseFloat(data.current_value);
+  const data = await apiFetch('/api/jackpot');
+  return Number(data?.currentValue || 0);
 };
 
 export const subscribeToJackpot = (onUpdate: (val: number) => void) => {
-  return supabase
-    .channel('jackpot-realtime')
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'jackpot_values'
-    }, (payload) => {
-      onUpdate(parseFloat(payload.new.current_value));
-    })
-    .subscribe();
+  let active = true;
+  const tick = async () => {
+    try {
+      const val = await getJackpotValue();
+      if (active) onUpdate(val);
+    } catch { }
+  };
+  void tick();
+  const interval = setInterval(tick, 3000);
+  return {
+    unsubscribe: () => {
+      active = false;
+      clearInterval(interval);
+    }
+  };
 };
 
 /**
@@ -296,56 +138,10 @@ export const subscribeToJackpot = (onUpdate: (val: number) => void) => {
  * para que el collector lo sincronice con GALDOS.db (TICKETS_ELIMINADOS_P)
  */
 export const voidTransaction = async (id: string, isCollector: boolean) => {
-  const table = isCollector ? 'sync_tickets' : 'transactions';
-
-  // 1. Obtener los datos completos de la transacción ANTES de anularla
-  const { data: transaction, error: fetchError } = await supabase
-    .from(table)
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (fetchError || !transaction) {
-    console.error(`Error obteniendo transacción de ${table}:`, fetchError?.message);
-    throw fetchError || new Error('Transacción no encontrada');
-  }
-
-  // 2. Marcar como anulado en la tabla original
-  const { error: updateError } = await supabase
-    .from(table)
-    .update({ status: 'voided' })
-    .eq('id', id);
-
-  if (updateError) {
-    console.error(`Error anulando en ${table}:`, updateError.message);
-    throw updateError;
-  }
-
-  // 3. Registrar en voided_tickets para que el collector lo sincronice con GALDOS.db
-  // Solo si es un ticket del collector (tiene terminal_id)
-  if (isCollector && transaction.terminal_id) {
-    const voidedTicket = {
-      terminal_id: transaction.terminal_id,
-      ticket_number: transaction.ticket_number || transaction.ticketId || '',
-      tipo: transaction.play_type || transaction.playType || '',
-      numeros: transaction.numbers || '',
-      valor: transaction.play_type || '',
-      monto: String(transaction.amount || 0),
-      race: transaction.race_number || transaction.raceNumber || '',
-      fecha: transaction.date ? transaction.date.split(' ')[0] : new Date().toISOString().split('T')[0],
-      hora: transaction.date ? transaction.date.split(' ')[1] || '' : new Date().toTimeString().split(' ')[0]
-    };
-
-    const { error: queueError } = await supabase
-      .from('voided_tickets')
-      .insert(voidedTicket);
-
-    if (queueError) {
-      console.warn('Error registrando anulación para sync:', queueError.message);
-      // No lanzamos error aquí porque la anulación en Supabase ya se completó
-    }
-  }
-
+  await apiFetch(`/api/transactions/${encodeURIComponent(id)}/void`, {
+    method: 'POST',
+    body: JSON.stringify({ isCollector })
+  });
   return true;
 };
 
@@ -357,76 +153,8 @@ export const voidTransaction = async (id: string, isCollector: boolean) => {
  * @returns Objeto con el conteo de tickets encontrados/eliminados
  */
 export const deleteTicketsByNumber = async (ticketNumber: string, confirmDelete: boolean = false) => {
-  let totalCount = 0;
-
-  try {
-    // Convertir a número si es posible (para tickets numéricos como "8")
-    const numericTicket = !isNaN(Number(ticketNumber)) ? Number(ticketNumber) : null;
-
-    // 1. Buscar en sync_tickets (tickets del collector)
-    let syncTicketsQuery = supabase
-      .from('sync_tickets')
-      .select('id');
-
-    // Buscar tanto en formato string como numérico
-    if (numericTicket !== null) {
-      syncTicketsQuery = syncTicketsQuery.or(`ticket_number.eq.${ticketNumber},ticket_number.eq.${numericTicket}`);
-    } else {
-      syncTicketsQuery = syncTicketsQuery.eq('ticket_number', ticketNumber);
-    }
-
-    const { data: syncTickets, error: syncError } = await syncTicketsQuery;
-
-    if (syncError) throw syncError;
-
-    // 2. Buscar en transactions (tickets manuales)
-    let transactionsQuery = supabase
-      .from('transactions')
-      .select('id');
-
-    // Buscar tanto en formato string como numérico
-    if (numericTicket !== null) {
-      transactionsQuery = transactionsQuery.or(`ticket_id.eq.${ticketNumber},ticket_id.eq.${numericTicket}`);
-    } else {
-      transactionsQuery = transactionsQuery.eq('ticket_id', ticketNumber);
-    }
-
-    const { data: transactions, error: transError } = await transactionsQuery;
-
-    if (transError) throw transError;
-
-    totalCount = (syncTickets?.length || 0) + (transactions?.length || 0);
-
-    // Si solo estamos contando, retornamos aquí
-    if (!confirmDelete) {
-      return { count: totalCount };
-    }
-
-    // 3. Eliminar permanentemente si confirmDelete = true
-    if (syncTickets && syncTickets.length > 0) {
-      const syncIds = syncTickets.map(t => t.id);
-      const { error: deleteSyncError } = await supabase
-        .from('sync_tickets')
-        .delete()
-        .in('id', syncIds);
-
-      if (deleteSyncError) throw deleteSyncError;
-    }
-
-    if (transactions && transactions.length > 0) {
-      const transIds = transactions.map(t => t.id);
-      const { error: deleteTransError } = await supabase
-        .from('transactions')
-        .delete()
-        .in('id', transIds);
-
-      if (deleteTransError) throw deleteTransError;
-    }
-
-    return { count: totalCount, deleted: true };
-
-  } catch (error: any) {
-    console.error('Error al eliminar tickets:', error.message);
-    throw new Error(error.message || 'Error al eliminar tickets');
-  }
+  const qs = `?confirm=${confirmDelete ? 'true' : 'false'}`;
+  return await apiFetch(`/api/tickets/${encodeURIComponent(ticketNumber)}${qs}`, {
+    method: 'DELETE'
+  });
 };

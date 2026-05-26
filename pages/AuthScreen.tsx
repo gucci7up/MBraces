@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
 import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2, Calendar } from 'lucide-react';
 import { getAppSettings } from '../data/supabaseService';
 import { AppSettings } from '../types';
+import { apiFetch, setToken } from '../lib/api';
 
 const AuthScreen: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +15,9 @@ const AuthScreen: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+    const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
+    const isApiConfigured = Boolean(apiUrl);
+    const isDisabled = loading || !isApiConfigured;
 
     React.useEffect(() => {
         const fetchSettings = async () => {
@@ -32,52 +35,38 @@ const AuthScreen: React.FC = () => {
         setError(null);
         setMessage(null);
 
+        if (!isApiConfigured) {
+            setError('API no configurada. Crea un archivo .env con VITE_API_URL (ver .env.example) y reinicia el servidor.');
+            setLoading(false);
+            return;
+        }
+
         try {
             if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
+                const data = await apiFetch('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
                 });
-                if (error) throw error;
+                setToken(String(data?.token || ''));
+                window.dispatchEvent(new Event('auth-changed'));
             } else {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            dob: dob,
-                        }
-                    }
+                await apiFetch('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password, fullName, dob })
                 });
-                if (error) throw error;
-
-                // Si el autoconfirm está activado o ya se creó el usuario en auth.users
-                if (data.user) {
-                    // Intentamos crear el perfil manualmente por si no hay trigger en Supabase
-                    const { error: profileError } = await supabase
-                        .from('profiles')
-                        .insert([
-                            {
-                                id: data.user.id,
-                                name: fullName,
-                                role: 'Moderador',
-                                is_approved: false,
-                                // Podríamos añadir dob aquí también si actualizamos la tabla profiles
-                            }
-                        ]);
-
-                    // Si falla el insert manual (probablemente por PK duplicated si ya hay un trigger), lo ignoramos
-                    if (profileError && !profileError.message.includes('duplicate key')) {
-                        console.error("Error creating profile:", profileError);
-                    }
-                }
-
                 setMessage('Registro exitoso. Espera la aprobación del administrador.');
                 setIsLogin(true);
             }
         } catch (err: any) {
-            setError(err.message || 'Ocurrió un error inesperado');
+            const raw = String(err?.message || '');
+            const normalized = raw.toLowerCase();
+            if (normalized.includes('credenciales')) {
+                setError('Credenciales inválidas. Verifica email/contraseña.');
+            } else if (normalized.includes('email')) {
+                setError(raw);
+            } else {
+                setError(raw || 'Ocurrió un error inesperado');
+            }
         } finally {
             setLoading(false);
         }
@@ -225,6 +214,12 @@ const AuthScreen: React.FC = () => {
                             </div>
                         )}
 
+                        {!isApiConfigured && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                                API no configurada. Crea un archivo .env con VITE_API_URL (ver .env.example) y reinicia el servidor.
+                            </div>
+                        )}
+
                         {message && (
                             <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm">
                                 {message}
@@ -233,7 +228,7 @@ const AuthScreen: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={isDisabled}
                             className="w-full py-4 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-900/20 flex items-center justify-center space-x-2 text-lg active:scale-[0.98]"
                         >
                             {loading ? (

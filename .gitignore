@@ -17,6 +17,7 @@ dist-ssr
 config.ini
 sqlite_path
 *.sql
+!server/schema.mysql.sql
 
 # Editor directories and files
 .vscode/*

@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { RefreshCw, DollarSign, Server, TrendingUp, TrendingDown, ArrowUpRight, Wifi, Database } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { fetchFilteredTransactions, getTerminals, fetchRecentRaces } from '../data/supabaseService';
 import { DashboardStats, Transaction, User, UserRole } from '../types';
 

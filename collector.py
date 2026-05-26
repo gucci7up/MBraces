@@ -18,8 +18,7 @@ config.optionxform = str # Preservar mayúsculas/minúsculas en los nombres de l
 config.read('config.ini', encoding='utf-8')
 
 try:
-    SUPABASE_URL = config.get('supabase', 'url').rstrip('/')
-    SUPABASE_KEY = config.get('supabase', 'key')
+    API_URL = (config.get('api', 'url', fallback='') or config.get('supabase', 'url')).rstrip('/')
     MACHINE_TOKEN = config.get('machine', 'token')
     MACHINE_ID = config.get('machine', 'id')
     SQLITE_PATH = config.get('local', 'sqlite_path')
@@ -29,12 +28,8 @@ except Exception as e:
     time.sleep(10)
     exit()
 
-# --- ENDPOINTS POSTGREST ---
 HEADERS = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json",
-    "Prefer": "return=minimal"
+    "Content-Type": "application/json"
 }
 
 def format_to_iso_time(time_str):
@@ -112,8 +107,7 @@ def sync_summary_and_heartbeat():
     stats = get_stats_from_db()
     if not stats: return
 
-    # Endpoint: PATCH a terminals
-    url = f"{SUPABASE_URL}/rest/v1/terminals?id=eq.{MACHINE_ID}&auth_token=eq.{MACHINE_TOKEN}"
+    url = f"{API_URL}/api/collector/heartbeat?terminalId={MACHINE_ID}&token={MACHINE_TOKEN}"
     
     # Usar timezone-aware UTC para evitar advertencias de depreciación
     now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -132,21 +126,13 @@ def sync_summary_and_heartbeat():
         "ini_content": ini_content  # Agregar contenido del INI
     }
 
-    headers = HEADERS.copy()
-    headers["Prefer"] = "return=representation"
-
     try:
-        res = requests.patch(url, headers=headers, json=payload, timeout=5)
-        if res.status_code in [200, 201]:
-            data = res.json()
-            if not data:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ADVERTENCIA: Credenciales Incorrectas.")
-                print(f"      - Verifica que el 'id' ({MACHINE_ID}) y 'token' ({MACHINE_TOKEN}) en config.ini sean correctos.")
-                print(f"      - Búscalos en el panel web: Sección 'Máquinas' -> Botón 'Copiar ID/Token'.")
-            else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK | Ventas Today: ${stats['ventas']} | Online 🟢")
-        elif res.status_code == 204:
-             print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK (No representation) | Ventas Today: ${stats['ventas']}")
+        res = requests.patch(url, headers=HEADERS, json=payload, timeout=5)
+        if res.status_code == 200:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK | Ventas Today: ${stats['ventas']}")
+        elif res.status_code == 403:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ADVERTENCIA: Credenciales Incorrectas.")
+            print(f"      - Verifica que el 'id' ({MACHINE_ID}) y 'token' ({MACHINE_TOKEN}) en config.ini sean correctos.")
         else:
             print(f"Error Heartbeat: {res.status_code} - {res.text}")
     except Exception as e:
@@ -265,7 +251,7 @@ def sync_detailed_data():
             
             if tickets_payload:
                 try:
-                    res = requests.post(f"{SUPABASE_URL}/rest/v1/sync_tickets", headers=HEADERS, json=tickets_payload, timeout=10)
+                    res = requests.post(f"{API_URL}/api/collector/tickets?terminalId={MACHINE_ID}&token={MACHINE_TOKEN}", headers=HEADERS, json=tickets_payload, timeout=10)
                     if res.status_code not in [200, 201, 204]:
                         print(f"Error Sync Tickets: {res.status_code} - {res.text}")
                     else:
@@ -299,7 +285,7 @@ def sync_detailed_data():
             
             if races_payload:
                 try:
-                    res = requests.post(f"{SUPABASE_URL}/rest/v1/sync_races", headers=HEADERS, json=races_payload, timeout=10)
+                    res = requests.post(f"{API_URL}/api/collector/races?terminalId={MACHINE_ID}&token={MACHINE_TOKEN}", headers=HEADERS, json=races_payload, timeout=10)
                     if res.status_code not in [200, 201, 204]:
                         print(f"Error Sync Races: {res.status_code} - {res.text}")
                     else:
@@ -313,11 +299,11 @@ def sync_detailed_data():
 
 def sync_config_ini():
     """Sincroniza la configuración .INI desde Supabase al archivo local"""
-    url = f"{SUPABASE_URL}/rest/v1/terminals?id=eq.{MACHINE_ID}&select=ini_content"
+    url = f"{API_URL}/api/collector/ini?terminalId={MACHINE_ID}&token={MACHINE_TOKEN}"
     try:
         res = requests.get(url, headers=HEADERS)
         if res.status_code == 200 and res.json():
-            remote_ini = res.json()[0]['ini_content']
+            remote_ini = res.json().get('ini_content')
             if not remote_ini: return
 
             # Leer .INI local para comparar o actualizar
@@ -352,7 +338,7 @@ def sync_voided_tickets():
     
     try:
         # 1. Obtener tickets pendientes de sincronizar desde Supabase
-        url = f"{SUPABASE_URL}/rest/v1/voided_tickets?terminal_id=eq.{MACHINE_ID}&synced=eq.false&select=*"
+        url = f"{API_URL}/api/collector/voided?terminalId={MACHINE_ID}&token={MACHINE_TOKEN}"
         res = requests.get(url, headers=HEADERS)
         
         if res.status_code != 200 or not res.json():
@@ -393,11 +379,8 @@ def sync_voided_tickets():
         # 3. Marcar como sincronizados en Supabase
         if synced_ids:
             for ticket_id in synced_ids:
-                update_url = f"{SUPABASE_URL}/rest/v1/voided_tickets?id=eq.{ticket_id}"
-                requests.patch(update_url, headers=HEADERS, json={
-                    'synced': True,
-                    'synced_at': datetime.now().isoformat()
-                })
+                update_url = f"{API_URL}/api/collector/voided/{ticket_id}?terminalId={MACHINE_ID}&token={MACHINE_TOKEN}"
+                requests.patch(update_url, headers=HEADERS, timeout=10)
             
             print(f"[{datetime.now().strftime('%H:%M:%S')}] {len(synced_ids)} ticket(s) anulado(s) sincronizado(s) a GALDOS.db")
     

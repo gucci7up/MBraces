@@ -1,7 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon, Users, Trash2 } from 'lucide-react';
 import { User, UserRole, AppSettings } from '../types';
-import { supabase } from '../lib/supabase';
+import { setToken } from '../lib/api';
 
 interface SidebarProps {
   currentView: string;
@@ -105,7 +105,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
           {/* FOOTER DEL SIDEBAR */}
           <div className="p-4 border-t border-slate-800/50">
             <button
-              onClick={() => supabase.auth.signOut()}
+              onClick={() => {
+                setToken(null);
+                window.dispatchEvent(new Event('auth-changed'));
+              }}
               className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-slate-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-colors text-sm font-bold"
             >
               <LogOut size={18} />

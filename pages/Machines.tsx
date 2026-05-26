@@ -6,7 +6,6 @@ import { Plus, Search, Edit2, Power, Wifi, WifiOff, Shield, Database, Loader2, K
 import { getTerminals, createTerminal } from '../data/supabaseService';
 import { Machine, MachineStatus, User, UserRole } from '../types';
 import { X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 interface MachinesProps {
   user: User;
@@ -42,27 +41,6 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
 
   useEffect(() => {
     loadMachines();
-
-    // SUSCRIPCIÓN REALTIME PARA ESTADO DE CADA MÁQUINA
-    const channel = supabase
-      .channel('machines-list-sync')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'terminals'
-      }, (payload) => {
-        // Actualizar la lista localmente sin recargar todo si es posible
-        if (payload.eventType === 'UPDATE') {
-          setMachines(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
-        } else {
-          loadMachines();
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user]);
 
   const handleCopyToken = (token: string) => {
