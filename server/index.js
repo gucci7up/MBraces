@@ -5,8 +5,6 @@ import { createPool } from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const app = express();
 
@@ -35,11 +33,6 @@ const pool = createPool({
 
 app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const distDir = path.resolve(__dirname, '..', 'dist');
-const indexHtmlPath = path.join(distDir, 'index.html');
 
 function signToken(payload) {
   return jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
@@ -597,13 +590,6 @@ app.patch('/api/collector/voided/:id', async (req, res) => {
     { id, terminal_id: auth.terminalId }
   );
   res.json({ ok: true });
-});
-
-app.use(express.static(distDir));
-
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
-  return res.sendFile(indexHtmlPath);
 });
 
 app.listen(port, () => {
