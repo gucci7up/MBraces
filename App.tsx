@@ -150,7 +150,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (session && !profile) {
+  if (token && !profile) {
     return (
       <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-white p-6 text-center">
         <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-xl shadow-red-900/10">
