@@ -137,7 +137,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <div className="space-y-6">
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
             <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest mb-6 w-full">Distribución Financiera</h3>
-            <div className="h-[200px] w-full">
+            <div style={{ height: 200, width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={10} dataKey="value" cornerRadius={12}>
