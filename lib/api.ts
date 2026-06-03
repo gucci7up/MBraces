@@ -1,4 +1,16 @@
-const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:5174';
+function normalizeBaseUrl(raw: string | undefined) {
+  const v = String(raw || '').trim();
+  if (!v) return '';
+  const unwrapped =
+    (v.startsWith('`') && v.endsWith('`')) ||
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+      ? v.slice(1, -1).trim()
+      : v;
+  return unwrapped.replace(/\/+$/, '');
+}
+
+const apiUrl = normalizeBaseUrl(import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:5174';
 
 function getToken() {
   return localStorage.getItem('mbraces_token');
@@ -30,4 +42,3 @@ export async function apiFetch(path: string, options?: RequestInit) {
   }
   return body;
 }
-

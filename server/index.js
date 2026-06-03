@@ -8,9 +8,25 @@ import { randomUUID } from 'node:crypto';
 
 const app = express();
 
+function normalizeEnvValue(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return '';
+  const unwrapped =
+    (v.startsWith('`') && v.endsWith('`')) ||
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+      ? v.slice(1, -1).trim()
+      : v;
+  return unwrapped.trim();
+}
+
+function normalizeOriginValue(raw) {
+  return normalizeEnvValue(raw).replace(/\/+$/, '');
+}
+
 const port = Number(process.env.PORT || 5174);
-const jwtSecret = process.env.JWT_SECRET || 'change-me';
-const corsOrigin = process.env.CORS_ORIGIN || '*';
+const jwtSecret = normalizeEnvValue(process.env.JWT_SECRET) || 'change-me';
+const corsOriginRaw = normalizeOriginValue(process.env.CORS_ORIGIN || '*') || '*';
 
 process.on('unhandledRejection', (reason) => {
   process.stderr.write(`unhandledRejection: ${String(reason)}\n`);
@@ -31,8 +47,23 @@ const pool = createPool({
   namedPlaceholders: true
 });
 
-app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin, credentials: true }));
-app.use(express.json({ limit: '2mb' }));
+const allowedOrigins = corsOriginRaw === '*'
+  ? null
+  : corsOriginRaw.split(',').map(v => normalizeOriginValue(v)).filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!allowedOrigins) return cb(null, true);
+    if (!origin) return cb(null, true);
+    const ok = allowedOrigins.includes(origin);
+    return cb(null, ok);
+  },
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}));
+
+app.use(express.json({ limit: '20mb' }));
 
 function signToken(payload) {
   return jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
@@ -68,6 +99,11 @@ app.get('/api/health/db', async (_req, res) => {
     res.status(500).json({ ok: false });
   }
 });
+
+async function ensureMigrations() {
+  try { await pool.execute('alter table app_settings modify app_logo_url longtext null'); } catch { }
+  try { await pool.execute('alter table app_settings modify ticket_logo_url longtext null'); } catch { }
+}
 
 app.post('/api/auth/register', async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
@@ -267,11 +303,19 @@ app.put('/api/app-settings', authRequired, adminRequired, async (req, res) => {
   const ticketName = String(req.body?.ticketName || 'CONSORCIO MBRACES');
   const ticketLogo = req.body?.ticketLogo ? String(req.body.ticketLogo) : null;
 
-  await pool.execute(
-    'update app_settings set app_name = :app_name, app_logo_url = :app_logo_url, ticket_name = :ticket_name, ticket_logo_url = :ticket_logo_url, updated_at = now() where id = 1',
-    { app_name: appName, app_logo_url: appLogo, ticket_name: ticketName, ticket_logo_url: ticketLogo }
-  );
-  res.json({ ok: true });
+  try {
+    await pool.execute(
+      'update app_settings set app_name = :app_name, app_logo_url = :app_logo_url, ticket_name = :ticket_name, ticket_logo_url = :ticket_logo_url, updated_at = now() where id = 1',
+      { app_name: appName, app_logo_url: appLogo, ticket_name: ticketName, ticket_logo_url: ticketLogo }
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    const msg = String(e?.message || e || '');
+    if (msg.toLowerCase().includes('data too long') || msg.toLowerCase().includes('packet')) {
+      return res.status(413).json({ error: 'Logo demasiado grande. Usa una imagen más pequeña.' });
+    }
+    res.status(500).json({ error: 'Error guardando configuración' });
+  }
 });
 
 app.get('/api/terminals', authRequired, async (req, res) => {
@@ -662,6 +706,8 @@ app.patch('/api/collector/voided/:id', async (req, res) => {
   );
   res.json({ ok: true });
 });
+
+await ensureMigrations();
 
 app.listen(port, () => {
   process.stdout.write(`API listening on 0.0.0.0:${port}\n`);

@@ -20,9 +20,9 @@ create table if not exists profiles (
 create table if not exists app_settings (
   id int primary key,
   app_name varchar(255) not null,
-  app_logo_url text null,
+  app_logo_url longtext null,
   ticket_name varchar(255) not null,
-  ticket_logo_url text null,
+  ticket_logo_url longtext null,
   updated_at datetime null
 );
 
@@ -130,4 +130,3 @@ create table if not exists notifications (
   type varchar(50) not null,
   created_at datetime not null
 );
-
