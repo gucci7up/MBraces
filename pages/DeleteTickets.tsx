@@ -74,23 +74,23 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
     };
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
-                    <Trash2 className="mr-3 text-red-500" size={32} />
+                <h1 className="text-3xl font-black text-slate-900 mb-2 flex items-center">
+                    <Trash2 className="mr-3 text-red-600" size={32} />
                     Eliminar Tickets
                 </h1>
-                <p className="text-slate-400">
+                <p className="text-slate-500">
                     Busca y elimina permanentemente tickets por su número de ID
                 </p>
             </div>
 
             {/* Warning Banner */}
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-start">
-                <AlertTriangle className="text-red-500 mr-3 flex-shrink-0 mt-0.5" size={20} />
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-start">
+                <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                    <h3 className="text-red-400 font-bold mb-1">⚠️ Acción Permanente</h3>
-                    <p className="text-red-300/80 text-sm">
+                    <h3 className="text-red-700 font-black mb-1">Acción Permanente</h3>
+                    <p className="text-red-700/80 text-sm">
                         Esta acción eliminará PERMANENTEMENTE todos los tickets con el número especificado.
                         No se puede deshacer. Úsala con precaución.
                     </p>
@@ -98,10 +98,10 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
             </div>
 
             {/* Search Form */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 mb-6">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 mb-6 shadow-sm">
                 <div className="flex gap-4">
                     <div className="flex-1">
-                        <label className="block text-sm font-semibold text-slate-400 mb-2">
+                        <label className="block text-sm font-black text-slate-700 mb-2">
                             Número de Ticket
                         </label>
                         <input
@@ -110,7 +110,7 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
                             onChange={(e) => setTicketNumber(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             placeholder="Ej: TCK-12345"
-                            className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:bg-slate-900"
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                             disabled={searching || deleting}
                         />
                     </div>
@@ -118,7 +118,7 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
                         <button
                             onClick={handleSearch}
                             disabled={searching || deleting || !ticketNumber.trim()}
-                            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
+                            className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl font-black transition-all flex items-center gap-2"
                         >
                             <Search size={18} />
                             {searching ? 'Buscando...' : 'Buscar'}
@@ -130,25 +130,25 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
             {/* Results */}
             {result && (
                 <div className={`border rounded-2xl p-6 ${result.success && result.count
-                        ? 'bg-yellow-500/10 border-yellow-500/30'
+                        ? 'bg-amber-50 border-amber-200'
                         : result.success
-                            ? 'bg-green-500/10 border-green-500/30'
-                            : 'bg-red-500/10 border-red-500/30'
+                            ? 'bg-emerald-50 border-emerald-200'
+                            : 'bg-red-50 border-red-200'
                     }`}>
                     <div className="flex items-start mb-4">
                         {result.success && result.count ? (
-                            <AlertTriangle className="text-yellow-500 mr-3 flex-shrink-0 mt-0.5" size={24} />
+                            <AlertTriangle className="text-amber-600 mr-3 flex-shrink-0 mt-0.5" size={24} />
                         ) : result.success ? (
-                            <CheckCircle2 className="text-green-500 mr-3 flex-shrink-0 mt-0.5" size={24} />
+                            <CheckCircle2 className="text-emerald-600 mr-3 flex-shrink-0 mt-0.5" size={24} />
                         ) : (
-                            <XCircle className="text-red-500 mr-3 flex-shrink-0 mt-0.5" size={24} />
+                            <XCircle className="text-red-600 mr-3 flex-shrink-0 mt-0.5" size={24} />
                         )}
                         <div className="flex-1">
                             <p className={`font-semibold ${result.success && result.count
-                                    ? 'text-yellow-400'
+                                    ? 'text-amber-800'
                                     : result.success
-                                        ? 'text-green-400'
-                                        : 'text-red-400'
+                                        ? 'text-emerald-800'
+                                        : 'text-red-800'
                                 }`}>
                                 {result.message}
                             </p>
@@ -161,7 +161,7 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
                             <button
                                 onClick={handleDelete}
                                 disabled={deleting}
-                                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl font-black transition-all flex items-center justify-center gap-2"
                             >
                                 <Trash2 size={18} />
                                 {deleting ? 'Eliminando...' : 'Sí, Eliminar Permanentemente'}
@@ -169,7 +169,7 @@ export const DeleteTickets: React.FC<DeleteTicketsProps> = ({ user }) => {
                             <button
                                 onClick={handleCancel}
                                 disabled={deleting}
-                                className="px-6 py-3 rounded-xl font-semibold border border-slate-600 text-slate-300 hover:bg-slate-700/50 transition-all"
+                                className="px-6 py-3 rounded-2xl font-black border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all"
                             >
                                 Cancelar
                             </button>

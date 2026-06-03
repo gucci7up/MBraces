@@ -73,29 +73,28 @@ const AuthScreen: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center p-4 relative overflow-hidden font-sans">
-            {/* Background elements */}
-            <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
-            <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-600/10 rounded-full blur-[120px]"></div>
+        <div className="min-h-screen bg-[#f5f6fa] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+            <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px]"></div>
+            <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]"></div>
 
-            <div className="max-w-4xl w-full grid md:grid-cols-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden relative z-10">
+            <div className="max-w-4xl w-full grid md:grid-cols-2 bg-white border border-slate-200 rounded-[2rem] shadow-lg overflow-hidden relative z-10">
                 {/* Left Side: Illustration / Text */}
-                <div className="p-12 flex flex-col justify-center text-white hidden md:flex bg-gradient-to-br from-orange-900/20 to-transparent">
+                <div className="p-12 flex flex-col justify-center text-slate-900 hidden md:flex bg-gradient-to-br from-emerald-50 to-white">
                     <div className="flex items-center space-x-2 mb-8">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-[#059669] shadow-xl shadow-emerald-900/40 border-2 border-slate-700/50">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-[#059669] shadow-sm border border-slate-200">
                             {appSettings?.appLogo ? (
                                 <img src={appSettings.appLogo} alt="Logo" className="w-full h-full object-cover" />
                             ) : (
                                 <span className="font-black text-white text-xl">G</span>
                             )}
                         </div>
-                        <span className="text-2xl font-bold tracking-tight">MBRACES</span>
+                        <span className="text-2xl font-black tracking-tight">{appSettings?.appName || 'MBRACES'}</span>
                     </div>
 
                     <h1 className="text-5xl font-bold mb-4 leading-tight">
                         {isLogin ? '¿Listo para la Carrera?' : 'Crear\nNueva Cuenta'}
                     </h1>
-                    <p className="text-slate-400 text-lg mb-8 leading-relaxed max-w-sm">
+                    <p className="text-slate-600 text-lg mb-8 leading-relaxed max-w-sm">
                         {isLogin
                             ? 'Bienvenido al panel administrativo de MBRACES. Ingrese sus credenciales para gestionar sus terminales.'
                             : '¿Ya estás registrado? Inicia sesión para acceder a tu panel y gestionar tus máquinas.'}
@@ -103,7 +102,7 @@ const AuthScreen: React.FC = () => {
 
                     <button
                         onClick={() => setIsLogin(!isLogin)}
-                        className="text-orange-500 font-semibold flex items-center hover:text-orange-400 transition-colors"
+                        className="text-emerald-700 font-black flex items-center hover:text-emerald-800 transition-colors"
                     >
                         {isLogin ? '¿No tienes una cuenta? Regístrate' : '¿Ya tienes una cuenta? Entrar'}
                     </button>
@@ -117,13 +116,13 @@ const AuthScreen: React.FC = () => {
                 </div>
 
                 {/* Right Side: Form */}
-                <div className="p-8 md:p-12 flex flex-col justify-center bg-white/5">
+                <div className="p-8 md:p-12 flex flex-col justify-center bg-white">
                     <div className="md:hidden text-center mb-8">
-                        <h1 className="text-3xl font-bold text-white">{isLogin ? 'Entrar' : 'Registrarse'}</h1>
+                        <h1 className="text-3xl font-black text-slate-900">{isLogin ? 'Entrar' : 'Registrarse'}</h1>
                     </div>
 
                     <div className="mb-8 hidden md:block">
-                        <h2 className="text-3xl font-bold text-white text-center">{isLogin ? 'Iniciar Sesión' : 'Registro de Usuario'}</h2>
+                        <h2 className="text-3xl font-black text-slate-900 text-center">{isLogin ? 'Iniciar Sesión' : 'Registro de Usuario'}</h2>
                     </div>
 
                     <form onSubmit={handleAuth} className="space-y-6">
@@ -145,7 +144,7 @@ const AuthScreen: React.FC = () => {
                                             required
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
-                                            className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all placeholder:text-slate-600"
+                                            className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all placeholder:text-slate-400"
                                             placeholder="Nombre del Administrador"
                                         />
                                     </div>
@@ -164,7 +163,7 @@ const AuthScreen: React.FC = () => {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all placeholder:text-slate-600"
+                                    className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all placeholder:text-slate-400"
                                     placeholder="correo@ejemplo.com"
                                 />
                             </div>
@@ -181,7 +180,7 @@ const AuthScreen: React.FC = () => {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all placeholder:text-slate-600"
+                                    className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all placeholder:text-slate-400"
                                     placeholder="••••••••••••"
                                 />
                             </div>
@@ -199,7 +198,7 @@ const AuthScreen: React.FC = () => {
                                         required
                                         value={dob}
                                         onChange={(e) => setDob(e.target.value)}
-                                        className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all appearance-none cursor-pointer [color-scheme:dark]"
+                                        className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer"
                                     />
                                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                                         <LogIn size={14} className="text-slate-500 rotate-90" />
@@ -229,7 +228,7 @@ const AuthScreen: React.FC = () => {
                         <button
                             type="submit"
                             disabled={isDisabled}
-                            className="w-full py-4 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-900/20 flex items-center justify-center space-x-2 text-lg active:scale-[0.98]"
+                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl transition-all shadow-sm flex items-center justify-center space-x-2 text-lg active:scale-[0.98]"
                         >
                             {loading ? (
                                 <Loader2 size={24} className="animate-spin" />
@@ -240,10 +239,10 @@ const AuthScreen: React.FC = () => {
                     </form>
 
                     <div className="mt-8 flex md:hidden items-center justify-center space-x-2">
-                        <span className="text-slate-400">{isLogin ? '¿No tienes cuenta?' : '¿Ya estás registrado?'}</span>
+                        <span className="text-slate-500">{isLogin ? '¿No tienes cuenta?' : '¿Ya estás registrado?'}</span>
                         <button
                             onClick={() => setIsLogin(!isLogin)}
-                            className="text-orange-500 font-bold"
+                            className="text-emerald-700 font-black"
                         >
                             {isLogin ? 'Regístrate' : 'Entrar'}
                         </button>
@@ -252,18 +251,18 @@ const AuthScreen: React.FC = () => {
             </div>
 
             {/* Bottom dots/patterns */}
-            <div className="absolute bottom-10 right-10 flex space-x-2 opacity-20">
+            <div className="absolute bottom-10 right-10 flex space-x-2 opacity-30">
                 <div className="grid grid-cols-4 gap-2">
                     {[...Array(16)].map((_, i) => (
-                        <div key={i} className="w-1 h-1 bg-white rounded-full"></div>
+                        <div key={i} className="w-1 h-1 bg-slate-300 rounded-full"></div>
                     ))}
                 </div>
             </div>
 
-            <div className="absolute top-10 left-[20%] flex space-x-2 opacity-10">
+            <div className="absolute top-10 left-[20%] flex space-x-2 opacity-20">
                 <div className="grid grid-cols-8 gap-4">
                     {[...Array(32)].map((_, i) => (
-                        <div key={i} className="w-1 h-1 bg-white rounded-full"></div>
+                        <div key={i} className="w-1 h-1 bg-slate-300 rounded-full"></div>
                     ))}
                 </div>
             </div>

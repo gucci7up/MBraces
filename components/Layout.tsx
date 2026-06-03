@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, User as UserIcon, Wifi, WifiOff, Check, Trash2, X, Database } from 'lucide-react';
+import { Menu, Bell, User as UserIcon, Wifi, WifiOff, Check, Trash2, Database, Search } from 'lucide-react';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { User, AppSettings, AppNotification } from '../types';
@@ -44,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#f5f6fa] font-sans text-slate-900 overflow-x-hidden">
 
       <Sidebar
         currentView={currentView}
@@ -55,7 +55,7 @@ const Layout: React.FC<LayoutProps> = ({
         appSettings={appSettings}
       />
 
-      <header className="fixed top-0 left-0 right-0 h-20 md:h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 z-50 px-4 md:px-8 flex items-center justify-between shadow-sm">
+      <header className="fixed top-0 left-0 right-0 h-20 md:h-16 bg-white border-b border-slate-200 z-50 px-4 md:px-8 flex items-center justify-between shadow-sm">
 
         <div className="flex items-center w-12 md:w-auto">
           <button
@@ -64,6 +64,17 @@ const Layout: React.FC<LayoutProps> = ({
           >
             <Menu size={26} />
           </button>
+        </div>
+
+        <div className="hidden md:flex flex-1 px-6">
+          <div className="relative w-full max-w-xl">
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col items-center md:hidden absolute left-1/2 -translate-x-1/2 pt-1">
@@ -151,7 +162,7 @@ const Layout: React.FC<LayoutProps> = ({
               <p className="text-xs font-bold text-slate-800 leading-none">{user.name}</p>
               <p className="text-[10px] text-slate-500 uppercase mt-1 tracking-wider">{user.role}</p>
             </div>
-            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 border border-slate-200 shadow-inner overflow-hidden">
+            <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-500 border border-slate-200 overflow-hidden">
               <UserIcon size={20} />
             </div>
           </div>

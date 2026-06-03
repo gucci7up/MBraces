@@ -100,7 +100,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
         {saveSuccess && (
           <div className="flex items-center space-x-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full font-bold text-xs animate-bounce">
             <CheckCircle2 size={16} />
-            <span>CAMBIOS GUARDADOS EN SUPABASE</span>
+            <span>CAMBIOS GUARDADOS</span>
           </div>
         )}
       </div>
@@ -142,13 +142,13 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
       </div>
 
       {/* MOTOR INI */}
-      <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-slate-800">
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
         <div className="flex justify-between items-center mb-10">
-          <div className="flex items-center text-white font-black text-xl">
-            <FileCode size={24} className="text-indigo-400 mr-3" />
+          <div className="flex items-center text-slate-900 font-black text-xl">
+            <FileCode size={24} className="text-indigo-600 mr-3" />
             Sincronizador de Motores (.INI)
           </div>
-          <select value={selectedTerminalId} onChange={e => handleTerminalChange(e.target.value)} className="bg-slate-800 text-white border-none rounded-xl px-4 py-2 font-bold text-sm outline-none">
+          <select value={selectedTerminalId} onChange={e => handleTerminalChange(e.target.value)} className="bg-slate-50 text-slate-800 border border-slate-200 rounded-xl px-4 py-2 font-bold text-sm outline-none focus:border-indigo-500">
             {terminals.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
@@ -157,7 +157,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
           <div className="space-y-10">
             {/* SECCIÓN DOG */}
             <div>
-              <h4 className="text-indigo-400 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
+              <h4 className="text-indigo-600 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
                 <Database size={14} className="mr-2" /> Motor de Juego [DOG]
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -176,7 +176,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                       <select
                         value={String(currentIni?.DOG?.[field.key as keyof IniConfig['DOG']] || 'FALSE')}
                         onChange={e => handleIniChange('DOG', field.key, e.target.value)}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                       >
                         {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
@@ -186,7 +186,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                         step="any"
                         value={currentIni?.DOG?.[field.key as keyof IniConfig['DOG']] || 0}
                         onChange={e => handleIniChange('DOG', field.key, Number(e.target.value))}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                       />
                     )}
                   </div>
@@ -196,7 +196,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
 
             {/* SECCIÓN PANTALLA */}
             <div>
-              <h4 className="text-amber-400 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
+              <h4 className="text-amber-600 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
                 <Monitor size={14} className="mr-2" /> Visualización [PANTALLA]
               </h4>
               <div>
@@ -205,23 +205,23 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                   type="text"
                   value={currentIni?.PANTALLA?.MENSAJE || ''}
                   onChange={e => handleIniChange('PANTALLA', 'MENSAJE', e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-4 py-3 outline-none focus:border-amber-500 focus:bg-slate-800"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono rounded-xl px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15"
                 />
               </div>
             </div>
 
-            <div className="pt-10 border-t border-slate-800 mt-4 flex justify-end">
-              <button onClick={handleSyncIni} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center space-x-2 shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 transition-all active:scale-95">
+            <div className="pt-10 border-t border-slate-200 mt-4 flex justify-end">
+              <button onClick={handleSyncIni} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center space-x-2 shadow-sm hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50">
                 <Save size={18} />
                 <span>Sincronizar con Terminal</span>
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-center py-20 bg-slate-800/20 rounded-3xl border border-dashed border-slate-800">
+          <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-300">
             <div className="animate-pulse flex flex-col items-center">
-              <FileCode size={40} className="text-slate-700 mb-4" />
-              <p className="text-slate-600 font-black text-xs uppercase tracking-widest">Selecciona una terminal para editar</p>
+              <FileCode size={40} className="text-slate-300 mb-4" />
+              <p className="text-slate-500 font-black text-xs uppercase tracking-widest">Selecciona una terminal para editar</p>
             </div>
           </div>
         )}

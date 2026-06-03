@@ -80,28 +80,28 @@ const Jackpot: React.FC<JackpotProps> = ({ user }) => {
       <div className="grid grid-cols-1 gap-8">
 
         {/* BIG VISUAL DISPLAY */}
-        <div className="bg-slate-900 rounded-[2.5rem] p-10 md:p-16 text-white shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[450px] border border-slate-800">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-amber-500/10 via-transparent to-transparent pointer-events-none"></div>
-          <div className="absolute -right-20 -bottom-20 opacity-5 transform rotate-12 pointer-events-none">
-            <Coins size={400} />
+        <div className="bg-white rounded-[2.5rem] p-10 md:p-16 text-slate-900 shadow-sm relative overflow-hidden flex flex-col items-center justify-center min-h-[450px] border border-slate-200">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent pointer-events-none"></div>
+          <div className="absolute -right-16 -bottom-16 opacity-[0.06] transform rotate-12 pointer-events-none text-emerald-600">
+            <Coins size={380} />
           </div>
 
           <div className="relative z-10 text-center space-y-6">
-            <div className="inline-flex items-center space-x-3 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-full mb-4">
-              <Radio size={16} className="text-amber-500 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">Global Jackpot Feed</span>
+            <div className="inline-flex items-center space-x-3 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-full mb-4">
+              <Radio size={16} className="text-emerald-600 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">Jackpot Global</span>
             </div>
 
             <h2 className="text-slate-500 font-black text-xs uppercase tracking-[0.3em]">Total Acumulado</h2>
 
-            <div className="text-5xl md:text-8xl font-black tracking-tighter tabular-nums bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent drop-shadow-2xl">
+            <div className="text-5xl md:text-8xl font-black tracking-tighter tabular-nums bg-gradient-to-b from-slate-900 to-slate-500 bg-clip-text text-transparent">
               RD${totalJackpot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
 
             <div className="pt-8 flex flex-col items-center">
               <div className="flex space-x-1.5 mb-6">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" style={{ animationDelay: `${i * 200}ms` }}></div>
+                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" style={{ animationDelay: `${i * 200}ms` }}></div>
                 ))}
               </div>
               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-xs leading-relaxed">
@@ -133,7 +133,7 @@ const Jackpot: React.FC<JackpotProps> = ({ user }) => {
             <div>
               <h4 className="font-black text-slate-900 text-sm uppercase tracking-widest mb-2">Control de Seguridad</h4>
               <p className="text-xs text-slate-500 leading-relaxed mb-4">Solo administradores autorizados pueden resetear o inyectar fondos directamente al acumulado del servidor.</p>
-              <button disabled={!canEdit} className="text-[10px] font-black bg-slate-900 text-white px-4 py-2 rounded-xl uppercase tracking-widest hover:bg-slate-800 transition-colors disabled:cursor-not-allowed">
+              <button disabled={!canEdit} className="text-[10px] font-black bg-slate-900 text-white px-4 py-2 rounded-xl uppercase tracking-widest hover:bg-slate-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50">
                 {canEdit ? 'Resetear Jackpot' : 'Acceso Bloqueado'}
               </button>
             </div>

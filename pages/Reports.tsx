@@ -163,7 +163,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
           <button onClick={handleExportPDF} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
             <FileText size={16} /> <span>PDF</span>
           </button>
-          <button onClick={() => setShowPrintModal(true)} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2 transition-all hover:bg-slate-800 active:scale-95 shadow-lg shadow-slate-900/20">
+          <button onClick={() => setShowPrintModal(true)} className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest flex items-center space-x-2 transition-all hover:bg-emerald-700 active:scale-95 shadow-sm">
             <Printer size={16} /> <span>Imprimir 80mm</span>
           </button>
         </div>
