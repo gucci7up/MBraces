@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, User as UserIcon, Wifi, WifiOff, Check, Trash2, Database, Search } from 'lucide-react';
+import { Menu, Bell, User as UserIcon, Wifi, WifiOff, Check, Trash2, Database, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { User, AppSettings, AppNotification } from '../types';
@@ -28,8 +28,16 @@ const Layout: React.FC<LayoutProps> = ({
   collectorStatus
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('mbraces_sidebar_collapsed') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -43,19 +51,39 @@ const Layout: React.FC<LayoutProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbraces_sidebar_collapsed', isSidebarCollapsed ? '1' : '0');
+    } catch {
+    }
+  }, [isSidebarCollapsed]);
+
   return (
-    <div className="min-h-screen bg-[#f5f6fa] font-sans text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#f9fafb] font-sans text-slate-900 overflow-x-hidden">
 
       <Sidebar
         currentView={currentView}
         onChangeView={onChangeView}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapsed={() => setIsSidebarCollapsed(v => !v)}
         user={user}
         appSettings={appSettings}
       />
 
-      <header className="fixed top-0 left-0 right-0 h-20 md:h-16 bg-white border-b border-slate-200 z-50 px-4 md:px-8 flex items-center justify-between shadow-sm">
+      <header className="fixed top-0 left-0 right-0 h-20 md:h-16 bg-white border-b border-slate-200 z-50 px-4 md:px-6 flex items-center justify-between shadow-sm">
 
         <div className="flex items-center w-12 md:w-auto">
           <button
@@ -64,16 +92,28 @@ const Layout: React.FC<LayoutProps> = ({
           >
             <Menu size={26} />
           </button>
+          <button
+            onClick={() => setIsSidebarCollapsed(v => !v)}
+            className="hidden md:flex items-center justify-center w-11 h-11 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            aria-label="Toggle Sidebar"
+          >
+            {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
         </div>
 
         <div className="hidden md:flex flex-1 px-6">
           <div className="relative w-full max-w-xl">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              ref={searchRef}
               type="text"
-              placeholder="Buscar..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40"
+              placeholder="Buscar o escribir comando..."
+              className="w-full bg-transparent border border-slate-200 rounded-lg pl-11 pr-16 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300"
             />
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-500 font-semibold select-none">
+              <span>Ctrl</span>
+              <span>K</span>
+            </div>
           </div>
         </div>
 
@@ -172,10 +212,10 @@ const Layout: React.FC<LayoutProps> = ({
       <main
         className={`transition-all duration-300 ease-in-out min-h-screen
           pt-28 md:pt-24 px-4 pb-32
-          md:ml-72 md:px-8 md:pb-8
+          ${isSidebarCollapsed ? 'md:ml-[90px]' : 'md:ml-[290px]'} md:px-6 md:pb-8
         `}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-screen-2xl mx-auto">
           {children}
         </div>
       </main>

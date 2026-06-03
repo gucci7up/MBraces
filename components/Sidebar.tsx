@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon, Users, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon, Users, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { User, UserRole, AppSettings } from '../types';
 import { setToken } from '../lib/api';
 
@@ -8,11 +8,13 @@ interface SidebarProps {
   onChangeView: (view: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed: boolean;
+  onToggleCollapsed: () => void;
   user: User;
   appSettings: AppSettings;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, onClose, user, appSettings }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, onClose, isCollapsed, onToggleCollapsed, user, appSettings }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Panel Principal', icon: LayoutDashboard },
     { id: 'machines', label: 'Máquinas', icon: Server },
@@ -30,23 +32,25 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-[70] w-72 bg-white text-slate-900 transform transition-transform duration-300 ease-in-out shadow-sm border-r border-slate-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'
-          } md:translate-x-0`}
+        className={`fixed inset-y-0 left-0 z-[70] bg-white text-slate-900 transform transition-all duration-300 ease-in-out shadow-sm border-r border-slate-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:translate-x-0 ${isCollapsed ? 'w-[90px]' : 'w-[290px]'}`}
       >
         <div className="h-full flex flex-col">
           <div className="p-6 pt-7 flex items-center justify-between border-b border-slate-200">
             <div className="flex items-center space-x-4">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden bg-[#059669] shadow-sm border border-slate-200">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden bg-[#465fff] shadow-sm border border-slate-200">
                 {appSettings.appLogo ? (
                   <img src={appSettings.appLogo} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <span className="font-black text-white text-xl">G</span>
                 )}
               </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-black tracking-tight text-slate-900 leading-tight">{appSettings.appName}</span>
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">Dashboard</span>
-              </div>
+              {!isCollapsed && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-black tracking-tight text-slate-900 leading-tight">{appSettings.appName}</span>
+                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">Dashboard</span>
+                </div>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -54,20 +58,29 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
             >
               <X size={20} />
             </button>
+            <button
+              onClick={onToggleCollapsed}
+              className="hidden md:flex items-center justify-center w-9 h-9 text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              aria-label="Toggle Sidebar"
+            >
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
           </div>
 
           <div className="px-4 py-5">
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex items-center space-x-3">
+            <div className={`bg-slate-50 rounded-2xl p-4 border border-slate-200 flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shadow-sm ${user.role === UserRole.SUPER_ADMIN ? 'bg-indigo-600' : 'bg-amber-500'
                 }`}>
                 {user.role === UserRole.SUPER_ADMIN ? <Shield size={20} /> : <UserIcon size={20} />}
               </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-black text-slate-900 truncate leading-tight">{user.name}</p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1 font-bold">
-                  {user.role === UserRole.SUPER_ADMIN ? 'SUPER ADMIN' : (user.consortiumName || 'MODERADOR')}
-                </p>
-              </div>
+              {!isCollapsed && (
+                <div className="overflow-hidden">
+                  <p className="text-sm font-black text-slate-900 truncate leading-tight">{user.name}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1 font-bold">
+                    {user.role === UserRole.SUPER_ADMIN ? 'SUPER ADMIN' : (user.consortiumName || 'MODERADOR')}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -82,17 +95,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
                     onChangeView(item.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-100 font-black'
+                  className={`w-full flex items-center ${isCollapsed ? 'justify-center px-3' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200 group relative overflow-hidden ${isActive
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 font-black'
                     : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold'
                     }`}
                 >
                   <Icon
                     size={20}
                     strokeWidth={isActive ? 2.25 : 1.75}
-                    className={`transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-600'}`}
+                    className={`transition-colors ${isActive ? 'text-[#465fff]' : 'text-slate-400 group-hover:text-slate-700'}`}
                   />
-                  <span className="text-sm">{item.label}</span>
+                  {!isCollapsed && <span className="text-sm">{item.label}</span>}
                 </button>
               );
             })}
@@ -104,16 +117,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
                 setToken(null);
                 window.dispatchEvent(new Event('auth-changed'));
               }}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors text-sm font-black border border-slate-200"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-sm font-black border border-slate-200"
             >
               <LogOut size={18} />
-              <span>Cerrar Sesión</span>
+              {!isCollapsed && <span>Cerrar Sesión</span>}
             </button>
-            <div className="mt-3 text-center">
+            {!isCollapsed && (
+              <div className="mt-3 text-center">
               <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">
                 V1.3.0 MBRACES
               </p>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </aside>

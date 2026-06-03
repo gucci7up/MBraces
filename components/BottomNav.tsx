@@ -26,7 +26,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onChangeView }) => {
               key={item.id}
               onClick={() => onChangeView(item.id)}
               className={`flex flex-col items-center justify-center transition-all duration-300 relative ${
-                isActive ? 'text-emerald-600 -translate-y-1' : 'text-slate-500'
+                isActive ? 'text-[#465fff] -translate-y-1' : 'text-slate-500'
               }`}
             >
               <Icon size={isActive ? 24 : 20} strokeWidth={isActive ? 2.5 : 2} />
@@ -34,7 +34,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onChangeView }) => {
                 {item.label}
               </span>
               {isActive && (
-                <span className="absolute -bottom-1 w-1 h-1 bg-emerald-600 rounded-full"></span>
+                <span className="absolute -bottom-1 w-1 h-1 bg-[#465fff] rounded-full"></span>
               )}
             </button>
           );
