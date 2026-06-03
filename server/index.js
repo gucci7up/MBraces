@@ -114,7 +114,7 @@ app.post('/api/auth/login', async (req, res) => {
   );
   const user = rows?.[0];
   if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
-  if (!user.email_confirmed) return res.status(403).json({ error: 'Email no confirmado' });
+  if (!user.email_confirmed) return res.status(403).json({ error: 'Cuenta desactivada' });
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
@@ -176,6 +176,77 @@ app.post('/api/admin/reject/:id', authRequired, adminRequired, async (req, res) 
   } finally {
     conn.release();
   }
+});
+
+app.get('/api/admin/users', authRequired, adminRequired, async (_req, res) => {
+  const [rows] = await pool.execute(
+    `select 
+        p.id, p.name, p.role, p.consortium_name, p.is_approved, p.created_at, p.updated_at,
+        u.email, u.email_confirmed
+     from profiles p
+     join auth_users u on u.id = p.id
+     order by p.created_at desc`
+  );
+
+  res.json(
+    (rows || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      role: r.role,
+      consortiumName: r.consortium_name,
+      isApproved: Boolean(r.is_approved),
+      isActive: Boolean(r.email_confirmed),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }))
+  );
+});
+
+app.put('/api/admin/users/:id', authRequired, adminRequired, async (req, res) => {
+  const id = String(req.params.id || '');
+  const role = req.body?.role ? String(req.body.role) : null;
+  const consortiumName = Object.prototype.hasOwnProperty.call(req.body || {}, 'consortiumName')
+    ? (req.body?.consortiumName ? String(req.body.consortiumName) : null)
+    : null;
+
+  if (role && !['Super Admin', 'Moderador'].includes(role)) {
+    return res.status(400).json({ error: 'Rol inválido' });
+  }
+
+  if (id === req.auth.sub && role && role !== 'Super Admin') {
+    return res.status(400).json({ error: 'No puedes degradar tu propio rol' });
+  }
+
+  const sets = [];
+  const params = { id };
+  if (role) {
+    sets.push('role = :role');
+    params.role = role;
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body || {}, 'consortiumName')) {
+    sets.push('consortium_name = :consortium_name');
+    params.consortium_name = consortiumName;
+  }
+  sets.push('updated_at = now()');
+
+  if (sets.length === 1) return res.json({ ok: true });
+
+  await pool.execute(`update profiles set ${sets.join(', ')} where id = :id`, params);
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/users/:id/deactivate', authRequired, adminRequired, async (req, res) => {
+  const id = String(req.params.id || '');
+  if (id === req.auth.sub) return res.status(400).json({ error: 'No puedes desactivar tu propia cuenta' });
+  await pool.execute('update auth_users set email_confirmed = 0 where id = :id', { id });
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/users/:id/activate', authRequired, adminRequired, async (req, res) => {
+  const id = String(req.params.id || '');
+  await pool.execute('update auth_users set email_confirmed = 1 where id = :id', { id });
+  res.json({ ok: true });
 });
 
 app.get('/api/app-settings', async (_req, res) => {
